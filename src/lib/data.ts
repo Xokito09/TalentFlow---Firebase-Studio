@@ -1,0 +1,190 @@
+import type { Client, Position, Candidate, Application, ApplicationStatus } from '@/lib/types';
+
+export const clients: Client[] = [
+  {
+    id: 'client-1',
+    name: 'Innovate Inc.',
+    industry: 'Technology',
+    pointOfContact: 'Alex Johnson',
+    contactEmail: 'alex.j@innovate.com',
+    logoUrl: 'https://picsum.photos/seed/innovate/100/100',
+  },
+  {
+    id: 'client-2',
+    name: 'Quantum Solutions',
+    industry: 'FinTech',
+    pointOfContact: 'Samantha Ray',
+    contactEmail: 's.ray@qsolutions.com',
+    logoUrl: 'https://picsum.photos/seed/quantum/100/100',
+  },
+  {
+    id: 'client-3',
+    name: 'HealthWell Group',
+    industry: 'Healthcare',
+    pointOfContact: 'Ben Carter',
+    contactEmail: 'b.carter@healthwell.dev',
+    logoUrl: 'https://picsum.photos/seed/healthwell/100/100',
+  },
+  {
+    id: 'client-4',
+    name: 'Creative Minds',
+    industry: 'Marketing Agency',
+    pointOfContact: 'Maria Garcia',
+    contactEmail: 'maria.g@creativeminds.io',
+    logoUrl: 'https://picsum.photos/seed/creative/100/100',
+  },
+];
+
+export const positions: Position[] = [
+  {
+    id: 'pos-1',
+    title: 'Senior Frontend Developer',
+    clientId: 'client-1',
+    description: 'Lead the development of our next-generation user interfaces.',
+    requirements: ['React', 'TypeScript', 'Next.js', 'Tailwind CSS'],
+    status: 'Open',
+  },
+  {
+    id: 'pos-2',
+    title: 'Product Manager',
+    clientId: 'client-1',
+    description: 'Define and execute the product roadmap for our flagship product.',
+    requirements: ['Agile Methodologies', 'User Research', 'Roadmap Planning'],
+    status: 'Open',
+  },
+  {
+    id: 'pos-3',
+    title: 'Data Scientist',
+    clientId: 'client-2',
+    description: 'Analyze large datasets to extract actionable business insights.',
+    requirements: ['Python', 'SQL', 'Machine Learning', 'Statistics'],
+    status: 'On Hold',
+  },
+  {
+    id: 'pos-4',
+    title: 'UX/UI Designer',
+    clientId: 'client-4',
+    description: 'Design intuitive and visually appealing user experiences for web and mobile.',
+    requirements: ['Figma', 'Adobe XD', 'User Testing', 'Prototyping'],
+    status: 'Open',
+  },
+  {
+    id: 'pos-5',
+    title: 'DevOps Engineer',
+    clientId: 'client-2',
+    description: 'Maintain and improve our CI/CD pipeline and cloud infrastructure.',
+    requirements: ['AWS', 'Docker', 'Kubernetes', 'Terraform'],
+    status: 'Closed',
+  },
+];
+
+export const candidates: Candidate[] = [
+  {
+    id: 'cand-1',
+    name: 'Elena Rodriguez',
+    email: 'elena.r@example.com',
+    phone: '555-0101',
+    avatarUrl: 'https://picsum.photos/seed/cand1/100/100',
+    currentRole: 'Frontend Developer at TechCorp',
+    linkedinUrl: '#',
+    portfolioUrl: '#',
+  },
+  {
+    id: 'cand-2',
+    name: 'Marcus Chen',
+    email: 'marcus.c@example.com',
+    phone: '555-0102',
+    avatarUrl: 'https://picsum.photos/seed/cand2/100/100',
+    currentRole: 'Data Analyst at DataDriven Co.',
+    linkedinUrl: '#',
+  },
+  {
+    id: 'cand-3',
+    name: 'Aisha Iqbal',
+    email: 'aisha.i@example.com',
+    phone: '555-0103',
+    avatarUrl: 'https://picsum.photos/seed/cand3/100/100',
+    currentRole: 'UX Designer at Creative Flow',
+    linkedinUrl: '#',
+    portfolioUrl: '#',
+  },
+  {
+    id: 'cand-4',
+    name: 'David Lee',
+    email: 'david.l@example.com',
+    phone: '555-0104',
+    avatarUrl: 'https://picsum.photos/seed/cand4/100/100',
+    currentRole: 'Product Manager at BuildIt',
+    linkedinUrl: '#',
+  },
+    {
+    id: 'cand-5',
+    name: 'Sophie Dubois',
+    email: 'sophie.d@example.com',
+    phone: '555-0105',
+    avatarUrl: 'https://picsum.photos/seed/cand5/100/100',
+    currentRole: 'Senior Software Engineer at CodeBase',
+    linkedinUrl: '#',
+  },
+];
+
+export const applications: Application[] = [
+  {
+    id: 'app-1',
+    candidateId: 'cand-1',
+    positionId: 'pos-1',
+    status: 'Interview',
+    appliedDate: '2023-10-15',
+  },
+  {
+    id: 'app-2',
+    candidateId: 'cand-5',
+    positionId: 'pos-1',
+    status: 'Screening',
+    appliedDate: '2023-10-18',
+  },
+  {
+    id: 'app-3',
+    candidateId: 'cand-4',
+    positionId: 'pos-2',
+    status: 'Offer',
+    appliedDate: '2023-10-12',
+  },
+  {
+    id: 'app-4',
+    candidateId: 'cand-2',
+    positionId: 'pos-3',
+    status: 'Sourced',
+    appliedDate: '2023-10-20',
+  },
+  {
+    id: 'app-5',
+    candidateId: 'cand-3',
+    positionId: 'pos-4',
+    status: 'Interview',
+    appliedDate: '2023-10-14',
+  },
+  {
+    id: 'app-6',
+    candidateId: 'cand-1',
+    positionId: 'pos-4',
+    status: 'Rejected',
+    appliedDate: '2023-09-25',
+  },
+  {
+    id: 'app-7',
+    candidateId: 'cand-3',
+    positionId: 'pos-1',
+    status: 'Sourced',
+    appliedDate: '2023-10-22',
+  },
+    {
+    id: 'app-8',
+    candidateId: 'cand-2',
+    positionId: 'pos-1',
+    status: 'Hired',
+    appliedDate: '2023-09-01',
+  },
+];
+
+export const pipelineStatuses: ApplicationStatus[] = ['Sourced', 'Screening', 'Interview', 'Offer', 'Hired', 'Rejected'];
