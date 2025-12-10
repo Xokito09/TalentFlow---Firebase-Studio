@@ -24,9 +24,18 @@ export type Client = {
   id: string;
   name: string;
   industry: string;
+  location: string;
+  website?: string;
   pointOfContact: string;
   contactEmail: string;
   logoUrl: string;
+  relationshipStatus: 'client' | 'prospect' | 'churn' | 'lost';
+  // CRM Fields
+  taxId?: string;
+  billingAddress?: string;
+  billingEmail?: string;
+  paymentTerms?: string;
+  notes?: string;
 };
 
 export type Position = {
