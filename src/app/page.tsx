@@ -1,8 +1,8 @@
-import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import { ProspectBoard } from "@/components/prospects/prospect-board";
 import { applications, candidates, positions, clients, pipelineStatuses } from "@/lib/data";
+import ProspectsHeader from "./prospects/header"; // Import the new server component for the header
 
 export default function ProspectsPage() {
   // Enhance applications with full candidate, position, and client details
@@ -20,15 +20,7 @@ export default function ProspectsPage() {
 
   return (
     <>
-      <PageHeader 
-        title="Prospects Pipeline"
-        description="Track candidates through your recruitment process."
-      >
-        <Button>
-          <PlusCircle className="mr-2" />
-          Add Prospect
-        </Button>
-      </PageHeader>
+      <ProspectsHeader /> {/* Use the new server component for the header */}
       <ProspectBoard applications={enrichedApplications} statuses={pipelineStatuses} />
     </>
   );

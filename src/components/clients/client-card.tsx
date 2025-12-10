@@ -2,6 +2,7 @@ import React from 'react';
 import { Client } from '../../lib/types';
 import { CLIENT_STATUS_CONFIG } from '../../lib/config';
 import { MoreHorizontal } from 'lucide-react';
+import Image from 'next/image'; // Import next/image
 
 type ClientCardProps = {
   client: Client;
@@ -17,11 +18,13 @@ export const ClientCard: React.FC<ClientCardProps> = ({ client, onClick, onEdit 
         onClick={onClick}
         className="bg-white border border-slate-200 rounded-xl p-4 flex items-center gap-4 hover:border-purple-500 hover:shadow-md transition-all cursor-pointer"
     >
-        <div className="w-16 h-16 bg-slate-50 rounded-lg flex-shrink-0 border border-slate-100">
-            <img 
+        <div className="w-16 h-16 bg-slate-50 rounded-lg flex-shrink-0 border border-slate-100 p-2 flex items-center justify-center"> {/* Added p-2 and flex/items/justify for centering */}
+            <Image 
                 src={client.logoUrl} 
                 alt={`${client.name} logo`}
-                className="w-full h-full object-contain p-2" 
+                width={64} // Set a fixed width based on parent w-16 (64px)
+                height={64} // Set a fixed height based on parent h-16 (64px)
+                style={{ objectFit: 'contain' }} // Use style for objectFit
             />
         </div>
         <div className="flex-1">

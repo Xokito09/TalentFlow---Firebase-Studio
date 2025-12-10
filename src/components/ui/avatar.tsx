@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import * as AvatarPrimitive from "@radix-ui/react-avatar"
+import Image from "next/image"; // Import next/image
 
 import { cn } from "@/lib/utils"
 
@@ -23,9 +24,14 @@ Avatar.displayName = AvatarPrimitive.Root.displayName
 const AvatarImage = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Image>,
   React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image>
->(({ className, ...props }, ref) => (
-  <AvatarPrimitive.Image
-    ref={ref}
+>(({ className, src, alt, ...props }, ref) => (
+  // Using next/image for optimization
+  <Image
+    ref={ref as any} // Cast ref to any because Image component ref type might be different
+    src={src || ""} // Ensure src is always a string
+    alt={alt || "avatar"}
+    width={40} // Fixed width from Avatar h-10 w-10
+    height={40} // Fixed height from Avatar h-10 w-10
     className={cn("aspect-square h-full w-full", className)}
     {...props}
   />

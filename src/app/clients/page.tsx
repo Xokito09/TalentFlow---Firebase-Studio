@@ -2,85 +2,86 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAppStore } from '../../lib/store';
 import { Client } from '../../lib/types';
-import { Search, Plus, Users, Trophy, Target, ChevronDown, Check } from 'lucide-react';
+import Image from 'next/image'; // Import next/image
+import { Search, Plus, Users, Trophy, Target, ChevronDown, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 // import { Security } from '../services/security';
 // import { Validators } from '../services/validators';
 import { Modal } from '../../components/ui/modal';
 import { ClientCard } from '../../components/clients/client-card';
 import { FilterDropdown } from '../../components/ui/filter-dropdown';
 import { CLIENT_STATUS_CONFIG } from '../../lib/config';
+import ClientsHeader from './header'; // Import the new header component
+
+const ITEMS_PER_PAGE = 10; // Define how many items per page
 
 const ClientList: React.FC = () => {
   const { clients, setViewState, addClient, updateClient, viewState } = useAppStore();
   const [searchTerm, setSearchTerm] = useState('');
-  // Default to partner (Clients) if no tab specified
   const [activeTab, setActiveTab] = useState<'partner' | 'prospect'>('partner');
-  
-  // Local Filter State
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'churn' | 'open' | 'lost'>('all');
   const [activeDropdown, setActiveDropdown] = useState<'status' | null>(null);
+  const [currentPage, setCurrentPage] = useState(1); // Pagination state
 
-  // Sync internal state with Global ViewState from Sidebar
   useEffect(() => {
     if (viewState.type === 'CLIENT_LIST' && viewState.activeTab) {
         setActiveTab(viewState.activeTab);
-        // Reset filter when switching main tabs
         setStatusFilter('all'); 
+        setCurrentPage(1); // Reset page on tab switch
     }
   }, [viewState]);
   
-  // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClientId, setEditingClientId] = useState<string | null>(null);
   
-  // -- Form Fields --
-  // Identity
   const [clientName, setClientName] = useState('');
   const [clientIndustry, setClientIndustry] = useState('');
   const [clientLocation, setClientLocation] = useState('');
   const [clientWebsite, setClientWebsite] = useState('');
   const [clientLogo, setClientLogo] = useState('');
   const [clientStatus, setClientStatus] = useState<'client' | 'prospect' | 'churn' | 'lost'>('prospect');
-  // Contact
   const [clientContact, setClientContact] = useState('');
   const [clientEmail, setClientEmail] = useState('');
-  // Billing & Admin
   const [clientTaxId, setClientTaxId] = useState('');
   const [clientBillingAddress, setClientBillingAddress] = useState('');
   const [clientBillingEmail, setClientBillingEmail] = useState('');
   const [clientPaymentTerms, setClientPaymentTerms] = useState('');
   const [clientNotes, setClientNotes] = useState('');
 
-  // OPTIMIZATION: Memoize filter logic
   const filteredClients = useMemo(() => {
     return clients.filter(c => {
-        // 1. Filter by Tab
         if (activeTab === 'partner') {
-            // "Clients" tab shows 'client' AND 'churn'
             if (c.relationshipStatus !== 'client' && c.relationshipStatus !== 'churn') return false;
             
-            // Apply Sub-Filter for Clients
             if (statusFilter === 'active' && c.relationshipStatus !== 'client') return false;
             if (statusFilter === 'churn' && c.relationshipStatus !== 'churn') return false;
 
         } else {
-            // "Prospects" tab shows 'prospect' AND 'lost'
             if (c.relationshipStatus !== 'prospect' && c.relationshipStatus !== 'lost') return false;
 
-            // Apply Sub-Filter for Prospects
             if (statusFilter === 'open' && c.relationshipStatus !== 'prospect') return false;
             if (statusFilter === 'lost' && c.relationshipStatus !== 'lost') return false;
         }
         
-        // 2. Filter by Search
         const search = searchTerm.toLowerCase();
         return c.name.toLowerCase().includes(search) || c.industry.toLowerCase().includes(search);
     });
   }, [clients, activeTab, statusFilter, searchTerm]);
 
+  const indexOfLastClient = currentPage * ITEMS_PER_PAGE;
+  const indexOfFirstClient = indexOfLastClient - ITEMS_PER_PAGE;
+  const currentClients = filteredClients.slice(indexOfFirstClient, indexOfLastClient);
+  const totalPages = Math.ceil(filteredClients.length / ITEMS_PER_PAGE);
+
+  const goToNextPage = () => {
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  };
+
+  const goToPreviousPage = () => {
+    setCurrentPage((prev) => Math.max(prev - 1, 1));
+  };
+
   const openNewClientModal = () => {
       setEditingClientId(null);
-      // Reset
       setClientName('');
       setClientIndustry('');
       setClientLocation('');
@@ -100,7 +101,6 @@ const ClientList: React.FC = () => {
   const openEditClientModal = (e: React.MouseEvent, client: Client) => {
       e.stopPropagation(); 
       setEditingClientId(client.id);
-      // Populate
       setClientName(client.name);
       setClientIndustry(client.industry);
       setClientLocation(client.location);
@@ -109,7 +109,6 @@ const ClientList: React.FC = () => {
       setClientEmail(client.contactEmail);
       setClientLogo(client.logoUrl);
       setClientStatus(client.relationshipStatus);
-      // Billing
       setClientTaxId(client.taxId || '');
       setClientBillingAddress(client.billingAddress || '');
       setClientBillingEmail(client.billingEmail || '');
@@ -121,11 +120,6 @@ const ClientList: React.FC = () => {
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-    //   const validation = Security.validateFile(file);
-    //   if (!validation.valid) {
-    //       alert(validation.error);
-    //       return;
-    //   }
       const reader = new FileReader();
       reader.onloadend = () => {
         setClientLogo(reader.result as string);
@@ -135,8 +129,6 @@ const ClientList: React.FC = () => {
   };
 
   const handleSaveClient = () => {
-    //   if (!Validators.required(clientName)) return;
-
       const baseClient = {
           name: clientName,
           industry: clientIndustry || 'Technology',
@@ -146,7 +138,6 @@ const ClientList: React.FC = () => {
           contactEmail: clientEmail || 'admin@example.com',
           logoUrl: clientLogo || `https://ui-avatars.com/api/?name=${encodeURIComponent(clientName)}&background=0B1120&color=fff&size=100`,
           relationshipStatus: clientStatus,
-          // CRM Fields
           taxId: clientTaxId,
           billingAddress: clientBillingAddress,
           billingEmail: clientBillingEmail,
@@ -161,7 +152,7 @@ const ClientList: React.FC = () => {
           });
       } else {
           addClient({
-              ...base-client,
+              ...baseClient,
               id: `client-${Math.random()}`
           });
       }
@@ -171,7 +162,6 @@ const ClientList: React.FC = () => {
 
   const getStatusFilterLabel = () => {
       if (statusFilter === 'all') return activeTab === 'partner' ? 'All Clients' : 'All Prospects';
-      // Use the config labels, mapped to local filter keys
       if (statusFilter === 'active') return CLIENT_STATUS_CONFIG.client.label + 's';
       if (statusFilter === 'churn') return CLIENT_STATUS_CONFIG.churn.label + 's';
       if (statusFilter === 'open') return CLIENT_STATUS_CONFIG.prospect.label + 's';
@@ -182,7 +172,6 @@ const ClientList: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto px-6 py-8 relative">
       
-      {/* New/Edit Client Modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -191,13 +180,18 @@ const ClientList: React.FC = () => {
       >
          <div className="space-y-6 mb-8">
              
-             {/* Section 1: Identity */}
              <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Company Identity</h4>
                 <div className="flex gap-4 mb-4">
                      <div className="w-20 h-20 bg-white border border-slate-200 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
                         {clientLogo ? (
-                            <img src={clientLogo} alt="Preview" className="w-full h-full object-cover" />
+                            <Image 
+                              src={clientLogo}
+                              alt="Preview"
+                              width={80} // Set a fixed width
+                              height={80} // Set a fixed height
+                              className="w-full h-full object-cover"
+                            />
                         ) : (
                             <Users className="w-8 h-8 text-slate-300" />
                         )}
@@ -264,7 +258,6 @@ const ClientList: React.FC = () => {
                 )}
              </div>
 
-             {/* Section 2: Contact Info */}
              <div className="grid grid-cols-2 gap-4">
                  <div>
                     <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Primary Contact Name</label>
@@ -298,7 +291,6 @@ const ClientList: React.FC = () => {
                 </div>
              </div>
 
-             {/* Section 3: Billing & Admin (Collapsible logic implied by visual separation) */}
              <div className="pt-4 border-t border-slate-100">
                 <h4 className="text-xs font-bold text-purple-500 uppercase tracking-widest mb-4 flex items-center gap-2">
                     Billing & Administration 
@@ -382,33 +374,10 @@ const ClientList: React.FC = () => {
          </div>
       </Modal>
 
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-end md:items-center mb-6 gap-4">
-        <div>
-           {/* Dynamic Title based on Active Tab */}
-           <h1 className="text-3xl font-bold text-gray-800">
-               {activeTab === 'partner' ? 'Clients' : 'Prospects'}
-           </h1>
-           <p className="text-slate-500 mt-1">
-               {activeTab === 'partner' 
-                    ? 'Manage your active client portfolio and key accounts' 
-                    : 'Track potential opportunities and sales pipeline'}
-           </p>
-        </div>
-        <div className="flex items-center gap-3 w-full md:w-auto">
-            <button 
-                onClick={openNewClientModal}
-                className="px-5 py-2.5 bg-gray-800 text-white rounded-lg text-sm font-bold shadow-lg hover:opacity-90 transition-all flex items-center gap-2 whitespace-nowrap"
-            >
-                <Plus className="w-4 h-4" /> {activeTab === 'partner' ? 'New Client' : 'New Prospect'}
-            </button>
-        </div>
-      </div>
+      <ClientsHeader activeTab={activeTab} openNewClientModal={openNewClientModal} />
 
-      {/* Toolbar (Filters & Search) */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
         
-        {/* Left: Filters */}
         <div className="w-full md:w-auto z-10">
             <FilterDropdown
                 label={getStatusFilterLabel()}
@@ -449,7 +418,6 @@ const ClientList: React.FC = () => {
             </FilterDropdown>
         </div>
 
-        {/* Right: Search */}
         <div className="relative w-full md:w-72">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input 
@@ -462,9 +430,8 @@ const ClientList: React.FC = () => {
         </div>
       </div>
 
-      {/* List */}
       <div className="space-y-3">
-        {filteredClients.map(client => (
+        {currentClients.map(client => (
             <ClientCard 
                 key={client.id}
                 client={client}
@@ -473,7 +440,7 @@ const ClientList: React.FC = () => {
             />
         ))}
 
-        {filteredClients.length === 0 && (
+        {currentClients.length === 0 && (
             <div className="text-center py-16 bg-slate-50 rounded-xl border border-dashed border-slate-200 flex flex-col items-center justify-center">
                 <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4 text-slate-300">
                     {activeTab === 'partner' ? <Trophy className="w-8 h-8" /> : <Target className="w-8 h-8" />}
@@ -497,6 +464,28 @@ const ClientList: React.FC = () => {
             </div>
         )}
       </div>
+
+      {filteredClients.length > ITEMS_PER_PAGE && (
+        <div className="flex justify-between items-center mt-4">
+          <button
+            onClick={goToPreviousPage}
+            disabled={currentPage === 1}
+            className="px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors shadow-sm flex items-center gap-2"
+          >
+            <ChevronLeft className="h-4 w-4" /> Previous
+          </button>
+          <span>
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            onClick={goToNextPage}
+            disabled={currentPage === totalPages}
+            className="px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors shadow-sm flex items-center gap-2"
+          >
+            Next <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+      )}
     </div>
   );
 };

@@ -2,11 +2,13 @@
 import React, { useState, useMemo } from 'react';
 import { useAppStore } from '../../lib/store';
 import { Position } from '../../lib/types';
+import Image from 'next/image'; // Import next/image
 import { Search, ChevronDown, Check } from 'lucide-react';
 import { POSITION_STATUS_CONFIG, POSITION_STATUS_KEYS } from '../../lib/config';
 import { usePagination } from '../../hooks/use-pagination';
 import { useDebounce } from '../../hooks/use-debounce';
 import { FilterDropdown } from '../../components/ui/filter-dropdown';
+import PositionsHeader from './header'; // Import the new header component
 
 const AllPositionsList: React.FC = () => {
   const { positions, clients, setViewState } = useAppStore();
@@ -64,10 +66,7 @@ const AllPositionsList: React.FC = () => {
   return (
       <div className="max-w-7xl mx-auto px-6 py-8">
            <div className="flex flex-col md:flex-row justify-between items-end md:items-center mb-6 gap-4">
-              <div>
-                 <h1 className="text-3xl font-bold text-gray-800">All Positions</h1>
-                 <p className="text-slate-500 mt-1">Overview of all roles across your client portfolio</p>
-              </div>
+              <PositionsHeader /> {/* Use the new server component for the header */}
               <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <input 
@@ -190,7 +189,15 @@ const AllPositionsList: React.FC = () => {
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2">
-                                                {client?.logoUrl && <img src={client.logoUrl} className="w-5 h-5 rounded-full" alt=""/>}
+                                                {client?.logoUrl && 
+                                                  <Image 
+                                                    src={client.logoUrl} 
+                                                    alt={`${client.name} logo`} 
+                                                    width={20} 
+                                                    height={20} 
+                                                    className="rounded-full"
+                                                  />
+                                                }
                                                 <span className="text-sm font-medium text-slate-700">{client?.name || 'Unknown'}</span>
                                             </div>
                                         </td>
