@@ -73,6 +73,8 @@ export const positions: Position[] = [
     description: 'Lead the development of our next-generation user interfaces.',
     requirements: ['React', 'TypeScript', 'Next.js', 'Tailwind CSS'],
     status: 'Open',
+    location: 'Remote',
+    department: 'Engineering',
   },
   {
     id: 'pos-2',
@@ -81,6 +83,8 @@ export const positions: Position[] = [
     description: 'Define and execute the product roadmap for our flagship product.',
     requirements: ['Agile Methodologies', 'User Research', 'Roadmap Planning'],
     status: 'Open',
+    location: 'San Francisco, CA',
+    department: 'Product',
   },
   {
     id: 'pos-3',
@@ -89,6 +93,8 @@ export const positions: Position[] = [
     description: 'Analyze large datasets to extract actionable business insights.',
     requirements: ['Python', 'SQL', 'Machine Learning', 'Statistics'],
     status: 'On Hold',
+    location: 'New York, NY',
+    department: 'Data & Analytics',
   },
   {
     id: 'pos-4',
@@ -97,6 +103,8 @@ export const positions: Position[] = [
     description: 'Design intuitive and visually appealing user experiences for web and mobile.',
     requirements: ['Figma', 'Adobe XD', 'User Testing', 'Prototyping'],
     status: 'Open',
+    location: 'Los Angeles, CA',
+    department: 'Design',
   },
   {
     id: 'pos-5',
@@ -105,6 +113,8 @@ export const positions: Position[] = [
     description: 'Maintain and improve our CI/CD pipeline and cloud infrastructure.',
     requirements: ['AWS', 'Docker', 'Kubernetes', 'Terraform'],
     status: 'Closed',
+    location: 'Remote',
+    department: 'Engineering',
   },
 ];
 

@@ -45,6 +45,8 @@ export type Position = {
   description: string;
   requirements: string[];
   status: 'Open' | 'Closed' | 'On Hold';
+  location?: string;
+  department?: string;
 };
 
 export type ApplicationStatus = 'Sourced' | 'Screening' | 'Interview' | 'Offer' | 'Hired' | 'Rejected';
