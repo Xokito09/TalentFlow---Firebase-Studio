@@ -2,17 +2,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAppStore } from '../../lib/store';
 import { Client } from '../../lib/types';
-import Image from 'next/image'; // Import next/image
+import Image from 'next/image';
 import { Search, Plus, Users, Trophy, Target, ChevronDown, Check, ChevronLeft, ChevronRight } from 'lucide-react';
-// import { Security } from '../services/security';
-// import { Validators } from '../services/validators';
 import { Modal } from '../../components/ui/modal';
 import { ClientCard } from '../../components/clients/client-card';
 import { FilterDropdown } from '../../components/ui/filter-dropdown';
 import { CLIENT_STATUS_CONFIG } from '../../lib/config';
-import ClientsHeader from './header'; // Import the new header component
+import ClientsHeader from './header';
 
-const ITEMS_PER_PAGE = 10; // Define how many items per page
+const ITEMS_PER_PAGE = 10;
 
 const ClientList: React.FC = () => {
   const { clients, setViewState, addClient, updateClient, viewState, clientsLoading, clientsInitialized, loadClients } = useAppStore();
@@ -20,7 +18,7 @@ const ClientList: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'partner' | 'prospect'>('partner');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'churn' | 'open' | 'lost'>('all');
   const [activeDropdown, setActiveDropdown] = useState<'status' | null>(null);
-  const [currentPage, setCurrentPage] = useState(1); // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     if (!clientsInitialized) {
@@ -32,7 +30,7 @@ const ClientList: React.FC = () => {
     if (viewState.type === 'CLIENT_LIST' && viewState.activeTab) {
         setActiveTab(viewState.activeTab);
         setStatusFilter('all'); 
-        setCurrentPage(1); // Reset page on tab switch
+        setCurrentPage(1);
     }
   }, [viewState]);
   
@@ -194,8 +192,8 @@ const ClientList: React.FC = () => {
                             <Image 
                               src={clientLogo}
                               alt="Preview"
-                              width={80} // Set a fixed width
-                              height={80} // Set a fixed height
+                              width={80}
+                              height={80}
                               className="w-full h-full object-cover"
                             />
                         ) : (
