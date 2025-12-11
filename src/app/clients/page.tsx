@@ -15,12 +15,18 @@ import ClientsHeader from './header'; // Import the new header component
 const ITEMS_PER_PAGE = 10; // Define how many items per page
 
 const ClientList: React.FC = () => {
-  const { clients, setViewState, addClient, updateClient, viewState } = useAppStore();
+  const { clients, setViewState, addClient, updateClient, viewState, clientsLoading, clientsInitialized, loadClients } = useAppStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'partner' | 'prospect'>('partner');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'churn' | 'open' | 'lost'>('all');
   const [activeDropdown, setActiveDropdown] = useState<'status' | null>(null);
   const [currentPage, setCurrentPage] = useState(1); // Pagination state
+
+  useEffect(() => {
+    if (!clientsInitialized) {
+      loadClients();
+    }
+  }, [clientsInitialized, loadClients]);
 
   useEffect(() => {
     if (viewState.type === 'CLIENT_LIST' && viewState.activeTab) {
@@ -128,7 +134,7 @@ const ClientList: React.FC = () => {
     }
   };
 
-  const handleSaveClient = () => {
+  const handleSaveClient = async () => {
       const baseClient = {
           name: clientName,
           industry: clientIndustry || 'Technology',
@@ -146,12 +152,12 @@ const ClientList: React.FC = () => {
       };
 
       if (editingClientId) {
-          updateClient({
+          await updateClient({
               ...baseClient,
               id: editingClientId,
           });
       } else {
-          addClient({
+          await addClient({
               ...baseClient,
               id: `client-${Math.random()}`
           });
@@ -430,40 +436,46 @@ const ClientList: React.FC = () => {
         </div>
       </div>
 
-      <div className="space-y-3">
-        {currentClients.map(client => (
-            <ClientCard 
-                key={client.id}
-                client={client}
-                onClick={() => setViewState({ type: 'CLIENT_DETAIL', clientId: client.id, previousView: { type: 'CLIENT_LIST', activeTab: activeTab } })}
-                onEdit={(e) => openEditClientModal(e, client)}
-            />
-        ))}
+      {clientsLoading && clients.length === 0 ? (
+        <div className="text-center py-16 bg-slate-50 rounded-xl border border-dashed border-slate-200 flex flex-col items-center justify-center">
+            Loading clients...
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {currentClients.map(client => (
+              <ClientCard 
+                  key={client.id}
+                  client={client}
+                  onClick={() => setViewState({ type: 'CLIENT_DETAIL', clientId: client.id, previousView: { type: 'CLIENT_LIST', activeTab: activeTab } })}
+                  onEdit={(e) => openEditClientModal(e, client)}
+              />
+          ))}
 
-        {currentClients.length === 0 && (
-            <div className="text-center py-16 bg-slate-50 rounded-xl border border-dashed border-slate-200 flex flex-col items-center justify-center">
-                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4 text-slate-300">
-                    {activeTab === 'partner' ? <Trophy className="w-8 h-8" /> : <Target className="w-8 h-8" />}
-                </div>
-                <h3 className="text-slate-900 font-bold mb-1">
-                    No {activeTab === 'partner' ? 'Clients' : 'Prospects'} found
-                </h3>
-                <p className="text-slate-500 text-sm max-w-xs">
-                    {activeTab === 'partner' 
-                        ? (statusFilter === 'churn' ? "No churned clients found." : "Clients are automatically promoted from Prospects when you make a successful hire.") 
-                        : (statusFilter === 'lost' ? "No lost prospects found." : "Add a new prospect to start tracking potential opportunities.")}
-                </p>
-                {activeTab === 'prospect' && statusFilter !== 'lost' && (
-                     <button 
-                        onClick={openNewClientModal}
-                        className="mt-4 px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors shadow-sm"
-                    >
-                        Create New Prospect
-                    </button>
-                )}
-            </div>
-        )}
-      </div>
+          {currentClients.length === 0 && (
+              <div className="text-center py-16 bg-slate-50 rounded-xl border border-dashed border-slate-200 flex flex-col items-center justify-center">
+                  <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4 text-slate-300">
+                      {activeTab === 'partner' ? <Trophy className="w-8 h-8" /> : <Target className="w-8 h-8" />}
+                  </div>
+                  <h3 className="text-slate-900 font-bold mb-1">
+                      No {activeTab === 'partner' ? 'Clients' : 'Prospects'} found
+                  </h3>
+                  <p className="text-slate-500 text-sm max-w-xs">
+                      {activeTab === 'partner' 
+                          ? (statusFilter === 'churn' ? "No churned clients found." : "Clients are automatically promoted from Prospects when you make a successful hire.") 
+                          : (statusFilter === 'lost' ? "No lost prospects found." : "Add a new prospect to start tracking potential opportunities.")}
+                  </p>
+                  {activeTab === 'prospect' && statusFilter !== 'lost' && (
+                       <button 
+                          onClick={openNewClientModal}
+                          className="mt-4 px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors shadow-sm"
+                      >
+                          Create New Prospect
+                      </button>
+                  )}
+              </div>
+          )}
+        </div>
+      )}
 
       {filteredClients.length > ITEMS_PER_PAGE && (
         <div className="flex justify-between items-center mt-4">

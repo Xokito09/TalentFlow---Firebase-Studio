@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect } from 'react';
+import React, { useEffect, useId } from 'react';
 import { X } from 'lucide-react';
 
 type ModalProps = {
@@ -11,6 +11,8 @@ type ModalProps = {
 };
 
 export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, maxWidth = 'max-w-lg' }) => {
+  const titleId = useId(); // Generate a unique ID for the title
+
   useEffect(() => {
     const handleEsc = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -29,13 +31,16 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
     <div 
         className="fixed inset-0 bg-black/50 z-50 flex justify-center items-center p-4"
         onClick={onClose}
+        role="dialog" // Indicate that this is a dialog
+        aria-modal="true" // Indicate that this is a modal dialog
+        aria-labelledby={titleId} // Link the dialog to its title
     >
       <div 
         className={`bg-white rounded-xl shadow-2xl w-full ${maxWidth} transform transition-all duration-300 ease-in-out`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-          <h2 className="text-xl font-bold text-slate-800">{title}</h2>
+          <h2 id={titleId} className="text-xl font-bold text-slate-800">{title}</h2>
           <button onClick={onClose} className="p-1 rounded-full text-slate-400 hover:bg-slate-100">
             <X className="w-5 h-5" />
           </button>
