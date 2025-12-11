@@ -34,7 +34,7 @@ export function ProspectBoard({ applications, statuses }: ProspectBoardProps) {
                   <CardHeader>
                     <div className="flex items-start gap-3">
                       <Avatar className="h-10 w-10 border">
-                        {app.candidate && <AvatarImage src={app.candidate.avatarUrl} alt={app.candidate.name} />}
+                        {app.candidate && app.candidate.avatarUrl && <AvatarImage src={app.candidate.avatarUrl} alt={app.candidate.name} />}
                         <AvatarFallback>{app.candidate?.name.charAt(0)}</AvatarFallback>
                       </Avatar>
                       <div className="grid gap-0.5">

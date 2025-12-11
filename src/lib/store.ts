@@ -33,8 +33,12 @@ export const useAppStore = create<AppState>((set, get) => ({
   viewState: { type: 'CLIENT_LIST' },
   setViewState: (viewState) => set({ viewState }),
   addClient: async (client) => {
-    await saveClient(client);
-    set((state) => ({ clients: [...state.clients, client] }));
+    const newClient = {
+        ...client,
+        relationshipStatus: client.relationshipStatus || 'client',
+    };
+    await saveClient(newClient);
+    set((state) => ({ clients: [...state.clients, newClient] }));
   },
   updateClient: async (client) => {
     await saveClient(client);
@@ -48,6 +52,10 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
     set({ clientsLoading: true });
     const clients = await getAllClients();
-    set({ clients, clientsInitialized: true, clientsLoading: false });
+    const normalizedClients = clients.map(client => ({
+        ...client,
+        relationshipStatus: client.relationshipStatus || 'client'
+    }));
+    set({ clients: normalizedClients, clientsInitialized: true, clientsLoading: false });
   },
 }));

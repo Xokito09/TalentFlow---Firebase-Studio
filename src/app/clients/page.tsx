@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAppStore } from '../../lib/store';
 import { Client } from '../../lib/types';
-import Image from 'next/image';
 import { Search, Plus, Users, Trophy, Target, ChevronDown, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Modal } from '../../components/ui/modal';
 import { ClientCard } from '../../components/clients/client-card';
@@ -19,7 +18,6 @@ const ClientList: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'churn' | 'open' | 'lost'>('all');
   const [activeDropdown, setActiveDropdown] = useState<'status' | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-
   useEffect(() => {
     if (!clientsInitialized) {
       loadClients();
@@ -51,25 +49,7 @@ const ClientList: React.FC = () => {
   const [clientPaymentTerms, setClientPaymentTerms] = useState('');
   const [clientNotes, setClientNotes] = useState('');
 
-  const filteredClients = useMemo(() => {
-    return clients.filter(c => {
-        if (activeTab === 'partner') {
-            if (c.relationshipStatus !== 'client' && c.relationshipStatus !== 'churn') return false;
-            
-            if (statusFilter === 'active' && c.relationshipStatus !== 'client') return false;
-            if (statusFilter === 'churn' && c.relationshipStatus !== 'churn') return false;
-
-        } else {
-            if (c.relationshipStatus !== 'prospect' && c.relationshipStatus !== 'lost') return false;
-
-            if (statusFilter === 'open' && c.relationshipStatus !== 'prospect') return false;
-            if (statusFilter === 'lost' && c.relationshipStatus !== 'lost') return false;
-        }
-        
-        const search = searchTerm.toLowerCase();
-        return c.name.toLowerCase().includes(search) || c.industry.toLowerCase().includes(search);
-    });
-  }, [clients, activeTab, statusFilter, searchTerm]);
+  const filteredClients = clients;
 
   const indexOfLastClient = currentPage * ITEMS_PER_PAGE;
   const indexOfFirstClient = indexOfLastClient - ITEMS_PER_PAGE;
@@ -132,7 +112,7 @@ const ClientList: React.FC = () => {
     }
   };
 
-  const handleSaveClient = async () => {
+  const handleSaveClient = () => {
       const baseClient = {
           name: clientName,
           industry: clientIndustry || 'Technology',
@@ -140,7 +120,7 @@ const ClientList: React.FC = () => {
           website: clientWebsite,
           pointOfContact: clientContact || 'Admin',
           contactEmail: clientEmail || 'admin@example.com',
-          logoUrl: clientLogo || `https://ui-avatars.com/api/?name=${encodeURIComponent(clientName)}&background=0B1120&color=fff&size=100`,
+          logoUrl: '',
           relationshipStatus: clientStatus,
           taxId: clientTaxId,
           billingAddress: clientBillingAddress,
@@ -150,18 +130,32 @@ const ClientList: React.FC = () => {
       };
 
       if (editingClientId) {
-          await updateClient({
+          updateClient({
               ...baseClient,
               id: editingClientId,
           });
       } else {
-          await addClient({
+          addClient({
               ...baseClient,
               id: `client-${Math.random()}`
           });
       }
       
       setIsModalOpen(false);
+      setEditingClientId(null);
+      setClientName('');
+      setClientIndustry('');
+      setClientLocation('');
+      setClientWebsite('');
+      setClientContact('');
+      setClientEmail('');
+      setClientLogo('');
+      setClientTaxId('');
+      setClientBillingAddress('');
+      setClientBillingEmail('');
+      setClientPaymentTerms('');
+      setClientNotes('');
+      setClientStatus(activeTab === 'partner' ? 'client' : 'prospect');
   };
 
   const getStatusFilterLabel = () => {
@@ -188,17 +182,7 @@ const ClientList: React.FC = () => {
                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Company Identity</h4>
                 <div className="flex gap-4 mb-4">
                      <div className="w-20 h-20 bg-white border border-slate-200 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
-                        {clientLogo ? (
-                            <Image 
-                              src={clientLogo}
-                              alt="Preview"
-                              width={80}
-                              height={80}
-                              className="w-full h-full object-cover"
-                            />
-                        ) : (
-                            <Users className="w-8 h-8 text-slate-300" />
-                        )}
+                        <Users className="w-8 h-8 text-slate-300" />
                     </div>
                     <div className="flex-1 space-y-3">
                          <div>
@@ -212,10 +196,6 @@ const ClientList: React.FC = () => {
                                 autoFocus
                             />
                         </div>
-                         <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-md text-xs font-bold text-slate-600 hover:border-purple-500 hover:text-purple-500 transition-colors shadow-sm">
-                             <Plus className="w-3 h-3" /> Upload Logo
-                             <input type="file" className="hidden" accept="image/*" onChange={handleLogoUpload} />
-                         </label>
                     </div>
                 </div>
 
