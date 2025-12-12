@@ -7,7 +7,7 @@ import { Button } from '../../../components/ui/button';
 import { Badge } from '../../../components/ui/badge';
 import { CLIENT_STATUS_CONFIG } from '../../../lib/config';
 import { PlusCircle, ArrowLeft, Edit, ChevronRight, ChevronDown, Check } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../../components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../../../components/ui/dialog';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
 import { Textarea } from '../../../components/ui/textarea';
@@ -443,6 +443,7 @@ const ClientDetailPage: React.FC = () => {
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Create New Position</DialogTitle>
+            <DialogDescription className="sr-only">Fill in the details to create a new position.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
@@ -469,6 +470,7 @@ const ClientDetailPage: React.FC = () => {
         <DialogContent className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl bg-slate-50 px-6 py-6">
           <DialogHeader>
             <DialogTitle>Edit Client Info</DialogTitle>
+            <DialogDescription className="sr-only">Edit the client's general information, billing details, and internal notes.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-6 py-4">
             <div className="space-y-4">

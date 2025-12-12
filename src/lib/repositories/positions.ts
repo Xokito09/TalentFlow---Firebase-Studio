@@ -2,6 +2,19 @@ import { db } from '../firebase';
 import { Position } from '../types';
 import { collection, doc, getDocs, setDoc, query, where, addDoc, getDoc } from 'firebase/firestore';
 
+// Helper function to remove undefined fields from an object (top-level only)
+const stripUndefined = (obj: any): any => {
+  const newObj: { [key: string]: any } = {};
+  for (const key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      if (obj[key] !== undefined) {
+        newObj[key] = obj[key];
+      }
+    }
+  }
+  return newObj;
+};
+
 const normalizePositionStatus = (status: string | undefined): 'Open' | 'Closed' | 'On Hold' => {
   const lowerStatus = (status || "").toLowerCase();
   if (lowerStatus === "open") return 'Open';
@@ -48,15 +61,30 @@ export async function getAllPositions(): Promise<Position[]> {
 
 export async function createPosition(data: Omit<Position, "id">): Promise<Position> {
   const positionsCol = collection(db, 'positions');
-  const { status, ...rest } = data;
-  const normalizedStatus = normalizePositionStatus(status);
-  const docRef = await addDoc(positionsCol, { ...rest, status: normalizedStatus });
-  return { ...rest, id: docRef.id, status: normalizedStatus } as Position;
+  const normalizedStatus = normalizePositionStatus(data.status);
+
+  const cleanPosition = {
+    ...data,
+    status: normalizedStatus,
+    location: data.location || "", // Default to empty string if missing
+    department: data.department || "", // Default to empty string if missing
+  };
+
+  const docRef = await addDoc(positionsCol, stripUndefined(cleanPosition));
+  return { ...cleanPosition, id: docRef.id } as Position;
 }
 
 export async function updatePosition(position: Position): Promise<Position> {
-  const { id, status, ...rest } = position;
-  const normalizedStatus = normalizePositionStatus(status);
-  await setDoc(doc(db, 'positions', id), { ...rest, status: normalizedStatus }, { merge: true });
+  const { id } = position;
+  const normalizedStatus = normalizePositionStatus(position.status);
+
+  const cleanPosition = {
+    ...position,
+    status: normalizedStatus,
+    location: position.location || "", // Default to empty string if missing
+    department: position.department || "", // Default to empty string if missing
+  };
+
+  await setDoc(doc(db, 'positions', id), stripUndefined(cleanPosition), { merge: true });
   return { ...position, status: normalizedStatus };
 }

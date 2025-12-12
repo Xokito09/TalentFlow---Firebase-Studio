@@ -1,0 +1,105 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useMemo } from 'react';
+import { Application, Candidate, Position } from '@/lib/types';
+import * as applicationsRepository from '@/lib/repositories/applications';
+import * as candidatesRepository from '@/lib/repositories/candidates';
+import * as positionsRepository from '@/lib/repositories/positions';
+import CandidateReportPage from '@/components/applications/candidate-report-page';
+
+const ApplicationCvPage: React.FC = () => {
+  const params = useParams();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const applicationId = params.applicationId as string;
+
+  const [application, setApplication] = useState<Application | null>(null);
+  const [candidate, setCandidate] = useState<Candidate | null>(null);
+  const [position, setPosition] = useState<Position | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const from = searchParams.get("from");
+  const fromPositionId = searchParams.get("positionId");
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!applicationId) return;
+      setLoading(true);
+      try {
+        const app = await applicationsRepository.getApplicationById(applicationId);
+        if (app) {
+          setApplication(app);
+          const [cand, pos] = await Promise.all([
+            candidatesRepository.getCandidateById(app.candidateId),
+            positionsRepository.getPositionById(app.positionId),
+          ]);
+          setCandidate(cand);
+          setPosition(pos);
+        } else {
+          setError("Application not found.");
+        }
+      } catch (e) {
+        console.error(e);
+        setError("Failed to load application data.");
+      }
+      setLoading(false);
+    };
+    fetchData();
+  }, [applicationId]);
+
+  const handleBack = () => {
+    if (from === "position" && fromPositionId) {
+      router.push(`/positions/${fromPositionId}`);
+    } else if (candidate?.id) {
+      router.push(`/candidates/${candidate.id}`);
+    } else {
+      router.back();
+    }
+  };
+
+  const backButtonLabel = useMemo(() => {
+    if (from === "position" && fromPositionId) {
+      return "Back to Position";
+    } else if (candidate?.id) {
+      return "Back to Candidate Profile";
+    } else {
+      return "Back";
+    }
+  }, [from, fromPositionId, candidate]);
+
+  if (loading) {
+    return <div className="p-8 text-center">Loading application...</div>;
+  }
+
+  if (error) {
+    return <div className="p-8 text-center text-red-500">{error}</div>;
+  }
+
+  if (!application || !candidate || !position) {
+    return <div className="p-8 text-center">Incomplete data.</div>;
+  }
+
+  const candidateReportProps = {
+    name: candidate.fullName,
+    role: application.appliedRoleTitle || candidate.currentTitle || '',
+    email: candidate.email,
+    linkedin: candidate.linkedinUrl,
+    compensation: application.appliedCompensation,
+    projectRole: position.title,
+    academicBackground: candidate.academicBackground?.join(', '),
+    languages: candidate.languages,
+    professionalBackground: application.professionalBackgroundAtApply || candidate.professionalBackground,
+    mainProjects: application.mainProjectsAtApply || candidate.mainProjects,
+    hardSkills: candidate.hardSkills,
+    phone: candidate.phone,
+    onBack: handleBack,
+    backButtonLabel: backButtonLabel,
+  };
+
+  return <CandidateReportPage {...candidateReportProps} />;
+};
+
+export default ApplicationCvPage;

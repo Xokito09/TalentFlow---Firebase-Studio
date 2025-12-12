@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Candidate } from '@/lib/types';
+import { toast } from "@/hooks/use-toast";
 
 interface AddCandidateModalProps {
   isOpen: boolean;
@@ -39,15 +40,13 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
 
   const [activeTab, setActiveTab] = useState('new');
 
-  // New Candidate Form State
   const [newCandidateFullName, setNewCandidateFullName] = useState('');
   const [newCandidateEmail, setNewCandidateEmail] = useState('');
   const [newCandidateCurrentTitle, setNewCandidateCurrentTitle] = useState('');
   const [newCandidatePhone, setNewCandidatePhone] = useState('');
   const [newCandidateLocation, setNewCandidateLocation] = useState('');
-  const [newCandidateSalaryExpectation, setNewCandidateSalaryExpectation] = useState(''); // New state for salary
+  const [newCandidateSalaryExpectation, setNewCandidateSalaryExpectation] = useState('');
 
-  // Existing Candidate Select State
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
@@ -62,7 +61,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
     setNewCandidateCurrentTitle('');
     setNewCandidatePhone('');
     setNewCandidateLocation('');
-    setNewCandidateSalaryExpectation(''); // Reset new salary expectation
+    setNewCandidateSalaryExpectation('');
     setSelectedCandidateId(undefined);
     setActiveTab('new');
   };
@@ -74,20 +73,30 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
       return;
     }
 
-    const notes = newCandidateSalaryExpectation ? `SalaryExpectationAtApply: ${newCandidateSalaryExpectation}` : undefined;
-
     const candidateData: Omit<Candidate, "id" | "createdAt" | "updatedAt"> = {
       fullName: newCandidateFullName,
       email: newCandidateEmail,
       currentTitle: newCandidateCurrentTitle || undefined,
       phone: newCandidatePhone || undefined,
       location: newCandidateLocation || undefined,
-      notes: notes,
     };
 
-    await createCandidateAndApplyToPosition({ clientId, positionId, candidate: candidateData });
-    resetForm();
-    onClose();
+    const { created } = await createCandidateAndApplyToPosition({
+      clientId,
+      positionId,
+      candidate: candidateData,
+      appliedCompensation: newCandidateSalaryExpectation,
+    });
+    
+    if (created) {
+      resetForm();
+      onClose();
+    } else {
+      toast({
+        title: "Application Exists",
+        description: "This candidate has already applied to this position.",
+      });
+    }
   };
 
   const handleExistingCandidateSubmit = async () => {
@@ -95,10 +104,18 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
       alert('Please select an existing candidate.');
       return;
     }
-    // No change for existing candidate as per prompt - salary expectation is for new applications
-    await addExistingCandidateToPosition({ clientId, positionId, candidateId: selectedCandidateId });
-    resetForm();
-    onClose();
+
+    const { created } = await addExistingCandidateToPosition({ clientId, positionId, candidateId: selectedCandidateId });
+    
+    if (created) {
+      resetForm();
+      onClose();
+    } else {
+      toast({
+        title: "Application Exists",
+        description: "This candidate has already applied to this position.",
+      });
+    }
   };
 
   return (

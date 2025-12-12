@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { Client, Candidate, Position, Application, PipelineStageKey } from './types';
-// Removed: import { positions as mockPositionsData } from './data';
 import * as clientsRepository from './repositories/clients';
 import * as candidatesRepository from './repositories/candidates';
 import * as applicationsRepository from './repositories/applications';
@@ -43,12 +42,13 @@ type AppState = {
     clientId: string;
     positionId: string;
     candidate: Omit<Candidate, "id" | "createdAt" | "updatedAt">;
-  }) => Promise<void>;
+    appliedCompensation?: string;
+  }) => Promise<{ created: boolean }>;
   addExistingCandidateToPosition: (params: {
     clientId: string;
     positionId: string;
     candidateId: string;
-  }) => Promise<void>;
+  }) => Promise<{ created: boolean }>;
 };
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -58,7 +58,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   candidates: [],
   candidatesLoading: false,
   candidatesInitialized: false,
-  positions: [], // Initialized as empty array
+  positions: [],
   positionsLoading: false,
   positionsInitialized: false,
   applicationsByPosition: {},
@@ -122,9 +122,9 @@ export const useAppStore = create<AppState>((set, get) => ({
       const newOrUpdatedGlobalPositions = clientPositions.reduce((acc, currentPosition) => {
         const existingIndex = acc.findIndex(p => p.id === currentPosition.id);
         if (existingIndex > -1) {
-          acc[existingIndex] = currentPosition; // Update existing
+          acc[existingIndex] = currentPosition;
         } else {
-          acc.push(currentPosition); // Add new
+          acc.push(currentPosition);
         }
         return acc;
       }, [...existingGlobalPositions]);
@@ -163,7 +163,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       if (existingPositionIndex > -1) {
         updatedPositions = (state.positions ?? []).map(p => (p.id === position.id ? position : p));
       } else {
-        updatedPositions = [position, ...(state.positions ?? [])]; // Add if not found
+        updatedPositions = [position, ...(state.positions ?? [])];
       }
       
       return {
@@ -225,43 +225,41 @@ export const useAppStore = create<AppState>((set, get) => ({
     }));
   },
 
-  createCandidateAndApplyToPosition: async ({ clientId, positionId, candidate: candidateData }) => {
+  createCandidateAndApplyToPosition: async ({ clientId, positionId, candidate: candidateData, appliedCompensation }) => {
     let candidate: Candidate | null = await candidatesRepository.findCandidateByEmail(candidateData.email);
-    const state = get();
 
     if (!candidate) {
       candidate = await candidatesRepository.createCandidate(candidateData);
       set((state) => ({ candidates: [...state.candidates, candidate!] }));
     }
 
-    const position = state.positions.find(p => p.id === positionId) || 
-                     state.positionsByClient[clientId]?.find(p => p.id === positionId);
-
-    const newApplication = await applicationsRepository.createApplication({
+    const { application, created } = await applicationsRepository.createOrGetApplication({
       candidateId: candidate.id,
       clientId,
       positionId,
       stageKey: 'shortlisted',
-      candidateSnapshot: {
-        fullName: candidate.fullName,
-        currentTitle: candidate.currentTitle,
-      },
-      applicationSnapshot: {
-        appliedRole: candidateData.currentTitle || '',
-        appliedSalaryExpectation: candidateData.notes || '',
-        appliedPositionTitle: position?.title || '',
-      },
+      appliedRoleTitle: candidateData.currentTitle,
+      appliedCompensation: appliedCompensation,
+      professionalBackgroundAtApply: candidate.professionalBackground,
+      mainProjectsAtApply: candidate.mainProjects
     });
 
-    set((state) => ({
-      applicationsByPosition: {
-        ...state.applicationsByPosition,
-        [positionId]: [
-          ...(state.applicationsByPosition[positionId] || []),
-          newApplication,
-        ],
-      },
-    }));
+    if (created) {
+      set((state) => {
+        const currentApplications = state.applicationsByPosition[positionId] || [];
+        const updatedApplications = [...currentApplications, application].filter((app, index, self) =>
+          index === self.findIndex((a) => a.id === app.id)
+        );
+        return {
+          applicationsByPosition: {
+            ...state.applicationsByPosition,
+            [positionId]: updatedApplications,
+          },
+        };
+      });
+    }
+
+    return { created };
   },
 
   addExistingCandidateToPosition: async ({ clientId, positionId, candidateId }) => {
@@ -274,37 +272,33 @@ export const useAppStore = create<AppState>((set, get) => ({
         set((state) => ({ candidates: [...state.candidates, candidate!] }));
       } else {
         console.error("Candidate not found:", candidateId);
-        return;
+        return { created: false };
       }
     }
 
-    const position = state.positions.find(p => p.id === positionId) || 
-                     state.positionsByClient[clientId]?.find(p => p.id === positionId);
-
-    const newApplication = await applicationsRepository.createApplication({
+    const { application, created } = await applicationsRepository.createOrGetApplication({
       candidateId: candidate.id,
       clientId,
       positionId,
       stageKey: 'shortlisted',
-      candidateSnapshot: {
-        fullName: candidate.fullName,
-        currentTitle: candidate.currentTitle,
-      },
-      applicationSnapshot: {
-        appliedRole: candidate.currentTitle || '',
-        appliedSalaryExpectation: candidate.notes || '',
-        appliedPositionTitle: position?.title || '',
-      },
+      appliedRoleTitle: candidate.currentTitle,
     });
 
-    set((state) => ({
-      applicationsByPosition: {
-        ...state.applicationsByPosition,
-        [positionId]: [
-          ...(state.applicationsByPosition[positionId] || []),
-          newApplication,
-        ],
-      },
-    }));
+    if (created) {
+      set((state) => {
+        const currentApplications = state.applicationsByPosition[positionId] || [];
+        const updatedApplications = [...currentApplications, application].filter((app, index, self) =>
+          index === self.findIndex((a) => a.id === app.id)
+        );
+        return {
+          applicationsByPosition: {
+            ...state.applicationsByPosition,
+            [positionId]: updatedApplications,
+          },
+        };
+      });
+    }
+
+    return { created };
   },
 }));

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from 'next/navigation';
 import {
   Table,
@@ -24,18 +24,23 @@ import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/page-header";
 import { useAppStore } from "@/lib/store";
 import { exportCandidatePdf } from '@/lib/utils';
+import * as applicationsRepository from '@/lib/repositories/applications';
 
 const ITEMS_PER_PAGE = 10;
 
 export default function CandidatesPage() {
   const router = useRouter();
   const [currentPage, setCurrentPage] = useState(1);
+  const [applicationCounts, setApplicationCounts] = useState<Record<string, number>>({});
+  // Removed isLoadingCounts state as per instructions for flicker reduction
 
   const candidates = useAppStore((s) => s.candidates);
   const candidatesLoading = useAppStore((s) => s.candidatesLoading);
   const candidatesInitialized = useAppStore((s) => s.candidatesInitialized);
   const loadCandidates = useAppStore((s) => s.loadCandidates);
-  const applicationsByPosition = useAppStore((s) => s.applicationsByPosition);
+
+  // Ref for caching counts across renders
+  const countsCacheRef = useRef<Record<string, number>>({});
 
   useEffect(() => {
     if (!candidatesInitialized) {
@@ -43,19 +48,70 @@ export default function CandidatesPage() {
     }
   }, [candidatesInitialized, loadCandidates]);
 
-  const handleExport = (candidateId: string) => {
-    exportCandidatePdf(candidateId);
-  };
-
-  const applicationCounts = Object.values(applicationsByPosition).flat().reduce((acc, app) => {
-    acc[app.candidateId] = (acc[app.candidateId] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-
   const indexOfLastCandidate = currentPage * ITEMS_PER_PAGE;
   const indexOfFirstCandidate = indexOfLastCandidate - ITEMS_PER_PAGE;
   const currentCandidates = candidates.slice(indexOfFirstCandidate, indexOfLastCandidate);
   const totalPages = Math.ceil(candidates.length / ITEMS_PER_PAGE);
+
+  const pageCandidateIds = useMemo(
+    () => currentCandidates.map(c => c.id).filter(Boolean),
+    [currentCandidates]
+  );
+
+  const pageCandidateIdsKey = useMemo(
+    () => pageCandidateIds.join(","),
+    [pageCandidateIds]
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchApplicationCounts = async () => {
+      if (pageCandidateIds.length === 0) {
+        // If no candidates on current page, clear counts for this page
+        const newCountsForPage = {};
+        const mergedCounts = { ...countsCacheRef.current, ...newCountsForPage };
+        if (JSON.stringify(mergedCounts) !== JSON.stringify(countsCacheRef.current)) {
+          countsCacheRef.current = mergedCounts;
+          setApplicationCounts(mergedCounts);
+        }
+        return;
+      }
+
+      // Check if all counts for the current page are already in cache
+      const allCached = pageCandidateIds.every(id => countsCacheRef.current.hasOwnProperty(id));
+      
+      // Only fetch if not all counts are cached for this page
+      if (!allCached) {
+        const applications = await applicationsRepository.getApplicationsByCandidateIds(pageCandidateIds);
+
+        if (cancelled) return; // Prevent late responses from overwriting new page results
+
+        const newCountsForPage = applications.reduce((acc, app) => {
+          acc[app.candidateId] = (acc[app.candidateId] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+
+        const mergedCounts = { ...countsCacheRef.current, ...newCountsForPage };
+        
+        // Only update state if there's an actual change to prevent unnecessary re-renders
+        if (JSON.stringify(mergedCounts) !== JSON.stringify(countsCacheRef.current)) {
+          countsCacheRef.current = mergedCounts;
+          setApplicationCounts(mergedCounts);
+        }
+      }
+    };
+
+    fetchApplicationCounts();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [pageCandidateIdsKey]); // Depend on stable key
+
+  const handleExport = (candidateId: string) => {
+    exportCandidatePdf(candidateId);
+  };
 
   const goToNextPage = () => {
     setCurrentPage((prev) => Math.min(prev + 1, totalPages));
@@ -108,7 +164,9 @@ export default function CandidatesPage() {
                 </TableRow>
               )}
               {!candidatesLoading && currentCandidates.map((candidate) => {
-                const applicationCount = applicationCounts[candidate.id] || 0;
+                const applicationCount = applicationCounts[candidate.id]; // Access directly from state
+                const showLoadingIndicator = pageCandidateIds.includes(candidate.id) && applicationCount === undefined;
+
                 return (
                   <TableRow key={candidate.id}>
                     <TableCell>
@@ -126,7 +184,7 @@ export default function CandidatesPage() {
                     <TableCell>{candidate.currentTitle}</TableCell>
                     <TableCell className="text-center">
                       <Badge variant="secondary" className="font-medium">
-                        {applicationCount}
+                        {showLoadingIndicator ? '...' : applicationCount || 0}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">

@@ -10,6 +10,17 @@ import { Candidate, Application, PipelineStageKey } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { formatFirestoreDate } from '@/lib/utils';
+
 import {
   ArrowLeft,
   Mail,
@@ -17,9 +28,7 @@ import {
   MapPin,
   Briefcase,
   BookOpen,
-  Clipboard,
-  Calendar,
-  Link as LinkIcon
+  Clipboard
 } from 'lucide-react';
 
 const CandidateProfilePage: React.FC = () => {
@@ -49,8 +58,7 @@ const CandidateProfilePage: React.FC = () => {
       if (!fetchedCandidate) {
         fetchedCandidate = await candidatesRepository.getCandidateById(candidateId);
         if (fetchedCandidate && !candidates.some(c => c.id === fetchedCandidate?.id)) {
-          // Optionally add to store if not present and fetched directly
-          loadCandidates(); // Re-fetch all to ensure store is up-to-date, or just add the single candidate
+          loadCandidates();
         }
       }
 
@@ -67,7 +75,6 @@ const CandidateProfilePage: React.FC = () => {
     fetchCandidateAndApplications();
   }, [candidateId, candidates, loadCandidates]);
 
-  // Ensure clients and positions are loaded for application history links
   useEffect(() => {
     if (!clientsInitialized) {
       loadClients();
@@ -120,7 +127,6 @@ const CandidateProfilePage: React.FC = () => {
         <span>Back to Candidates</span>
       </Link>
 
-      {/* Header */}
       <div className="flex items-center gap-6">
         <Avatar className="h-24 w-24 border">
           <AvatarFallback className="text-4xl">{candidate.fullName.charAt(0).toUpperCase()}</AvatarFallback>
@@ -132,7 +138,6 @@ const CandidateProfilePage: React.FC = () => {
         </div>
       </div>
 
-      {/* Contact Info */}
       <Card>
         <CardHeader>
           <CardTitle className="text-xl">Contact Information</CardTitle>
@@ -143,34 +148,31 @@ const CandidateProfilePage: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Skills */}
-      {candidate.skills && candidate.skills.length > 0 && (
+      {candidate.hardSkills && candidate.hardSkills.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-xl">Skills</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2">
-            {candidate.skills.map((skill, index) => (
+            {candidate.hardSkills.map((skill, index) => (
               <Badge key={index} variant="secondary">{skill}</Badge>
             ))}
           </CardContent>
         </Card>
       )}
 
-      {/* Bio / Notes */}
-      {(candidate.bio || candidate.notes) && (
+      {(candidate.professionalBackground || candidate.mainProjects) && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-xl">Bio & Notes</CardTitle>
+            <CardTitle className="text-xl">Experience</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {candidate.bio && <div className="text-slate-700"><h3 className="font-semibold mb-1 flex items-center gap-2"><BookOpen className="h-5 w-5 text-slate-500" />Bio</h3><p>{candidate.bio}</p></div>}
-            {candidate.notes && <div className="text-slate-700"><h3 className="font-semibold mb-1 flex items-center gap-2"><Clipboard className="h-5 w-5 text-slate-500" />Notes</h3><p>{candidate.notes}</p></div>}
+            {candidate.professionalBackground && <div className="text-slate-700"><h3 className="font-semibold mb-1 flex items-center gap-2"><BookOpen className="h-5 w-5 text-slate-500" />Professional Background</h3><p>{candidate.professionalBackground}</p></div>}
+            {candidate.mainProjects && <div className="text-slate-700"><h3 className="font-semibold mb-1 flex items-center gap-2"><Clipboard className="h-5 w-5 text-slate-500" />Main Projects</h3><p>{candidate.mainProjects.join(', ')}</p></div>}
           </CardContent>
         </Card>
       )}
 
-      {/* Application History */}
       <Card>
         <CardHeader>
           <CardTitle className="text-xl">Application History</CardTitle>
@@ -185,6 +187,8 @@ const CandidateProfilePage: React.FC = () => {
                   <TableHead>Position</TableHead>
                   <TableHead>Client</TableHead>
                   <TableHead>Stage</TableHead>
+                  <TableHead>Role at apply time</TableHead>
+                  <TableHead>Salary at apply time</TableHead>
                   <TableHead>Applied Date</TableHead>
                 </TableRow>
               </TableHeader>
@@ -192,13 +196,15 @@ const CandidateProfilePage: React.FC = () => {
                 {applications.map((app) => (
                   <TableRow key={app.id}>
                     <TableCell>
-                      <Link href={`/positions/${app.positionId}`} className="text-blue-600 hover:underline">
+                      <Link href={`/applications/${app.id}?from=candidate&candidateId=${candidateId}`} className="text-blue-600 hover:underline">
                         {getPositionTitle(app.positionId)}
                       </Link>
                     </TableCell>
                     <TableCell>{clients.find(c => c.id === app.clientId)?.name || "Unknown Client"}</TableCell>
                     <TableCell>{getStageKeyLabel(app.stageKey)}</TableCell>
-                    <TableCell>{app.appliedDate.toDate().toLocaleDateString()}</TableCell>
+                    <TableCell>{app.appliedRoleTitle || ''}</TableCell>
+                    <TableCell>{app.appliedCompensation || ''}</TableCell>
+                    <TableCell>{formatFirestoreDate(app.appliedDate)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

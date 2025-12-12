@@ -11,9 +11,11 @@ type ClientCardProps = {
 };
 
 export const ClientCard: React.FC<ClientCardProps> = ({ client, onClick, onEdit }) => {
+  // Default relationshipStatus to 'client' if it's missing or not recognized
+  const effectiveRelationshipStatus = client.relationshipStatus || 'client';
   const statusConfig =
-    CLIENT_STATUS_CONFIG[client.relationshipStatus] ||
-    CLIENT_STATUS_CONFIG.prospect; // Default to prospect if missing
+    CLIENT_STATUS_CONFIG[effectiveRelationshipStatus] ||
+    CLIENT_STATUS_CONFIG.client; // Default to client if the effective status is not in config
 
   return (
     <Link 

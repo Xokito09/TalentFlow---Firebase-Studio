@@ -22,13 +22,19 @@ export type Candidate = {
   notes?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
-  // For backward compatibility (will be removed later)
-  name?: string;
-  currentRole?: string;
+  // Identity fields
+  name?: string; // Legacy
+  currentRole?: string; // Legacy
   avatarUrl?: string;
   linkedinUrl?: string;
   portfolioUrl?: string;
   resumeUrl?: string;
+  photoUrl?: string;
+  hardSkills?: string[];
+  languages?: string[];
+  academicBackground?: string[];
+  professionalBackground?: string;
+  mainProjects?: string[];
 };
 
 export type Client = {
@@ -71,15 +77,31 @@ export type Application = {
   stageKey: PipelineStageKey;
   appliedDate: Timestamp;
   updatedAt: Timestamp;
-  candidateSnapshot: {
-    fullName: string;
+  
+  // Normalized Per-Application Fields
+  appliedRoleTitle?: string;
+  appliedCompensation?: string;
+  professionalBackgroundAtApply?: string;
+  mainProjectsAtApply?: string[];
+  
+  // Legacy / Transitional Snapshots (can be deprecated eventually)
+  candidateSnapshot?: {
+    fullName?: string;
     currentTitle?: string;
+    email?: string;
+    linkedinUrl?: string;
+    academicBackground?: string[];
+    languages?: string[];
+    professionalBackground?: string;
+    mainProjects?: string[];
+    hardSkills?: string[];
   };
   applicationSnapshot?: {
+    positionTitle?: string;
     appliedRole?: string;
-    appliedSalaryExpectation?: string;
-    appliedPositionTitle?: string;
+    compensation?: string;
   };
+  
   // For backward compatibility (will be removed later)
   status?: ApplicationStatus;
 };
