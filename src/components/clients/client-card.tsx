@@ -13,16 +13,20 @@ type ClientCardProps = {
 export const ClientCard: React.FC<ClientCardProps> = ({ client, onClick, onEdit }) => {
   const statusConfig =
     CLIENT_STATUS_CONFIG[client.relationshipStatus] ||
-    CLIENT_STATUS_CONFIG.client;
+    CLIENT_STATUS_CONFIG.prospect; // Default to prospect if missing
 
   return (
     <Link 
         href={`/clients/${client.id}`}
         className="bg-white border border-slate-200 rounded-xl p-4 flex items-center gap-4 hover:border-purple-500 hover:shadow-md transition-all cursor-pointer"
     >
-        <div className="w-16 h-16 rounded-lg bg-slate-200 flex items-center justify-center text-slate-500 text-lg font-semibold">
-          {client.name ? client.name.charAt(0).toUpperCase() : "C"}
-        </div>
+        {client.logoUrl && !client.logoUrl.startsWith("data:") ? (
+          <img src={client.logoUrl} alt={`${client.name} logo`} className="w-16 h-16 rounded-lg object-cover" />
+        ) : (
+          <div className="w-16 h-16 rounded-lg bg-slate-200 flex items-center justify-center text-slate-500 text-lg font-semibold">
+            {client.name ? client.name.charAt(0).toUpperCase() : "C"}
+          </div>
+        )}
         <div className="flex-1">
             <div className="flex justify-between items-start">
                 <div>

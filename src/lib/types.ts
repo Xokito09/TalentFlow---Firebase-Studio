@@ -75,6 +75,11 @@ export type Application = {
     fullName: string;
     currentTitle?: string;
   };
+  applicationSnapshot?: {
+    appliedRole?: string;
+    appliedSalaryExpectation?: string;
+    appliedPositionTitle?: string;
+  };
   // For backward compatibility (will be removed later)
   status?: ApplicationStatus;
 };

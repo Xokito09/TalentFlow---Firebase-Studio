@@ -45,6 +45,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
   const [newCandidateCurrentTitle, setNewCandidateCurrentTitle] = useState('');
   const [newCandidatePhone, setNewCandidatePhone] = useState('');
   const [newCandidateLocation, setNewCandidateLocation] = useState('');
+  const [newCandidateSalaryExpectation, setNewCandidateSalaryExpectation] = useState(''); // New state for salary
 
   // Existing Candidate Select State
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | undefined>(undefined);
@@ -61,6 +62,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
     setNewCandidateCurrentTitle('');
     setNewCandidatePhone('');
     setNewCandidateLocation('');
+    setNewCandidateSalaryExpectation(''); // Reset new salary expectation
     setSelectedCandidateId(undefined);
     setActiveTab('new');
   };
@@ -72,12 +74,15 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
       return;
     }
 
+    const notes = newCandidateSalaryExpectation ? `SalaryExpectationAtApply: ${newCandidateSalaryExpectation}` : undefined;
+
     const candidateData: Omit<Candidate, "id" | "createdAt" | "updatedAt"> = {
       fullName: newCandidateFullName,
       email: newCandidateEmail,
       currentTitle: newCandidateCurrentTitle || undefined,
       phone: newCandidatePhone || undefined,
       location: newCandidateLocation || undefined,
+      notes: notes,
     };
 
     await createCandidateAndApplyToPosition({ clientId, positionId, candidate: candidateData });
@@ -90,6 +95,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
       alert('Please select an existing candidate.');
       return;
     }
+    // No change for existing candidate as per prompt - salary expectation is for new applications
     await addExistingCandidateToPosition({ clientId, positionId, candidateId: selectedCandidateId });
     resetForm();
     onClose();
@@ -145,6 +151,15 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
                   placeholder="Software Engineer"
                   value={newCandidateCurrentTitle}
                   onChange={(e) => setNewCandidateCurrentTitle(e.target.value)}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="salaryExpectation">Salary expectation for this application</Label>
+                <Input
+                  id="salaryExpectation"
+                  placeholder="e.g., $120,000 - $140,000"
+                  value={newCandidateSalaryExpectation}
+                  onChange={(e) => setNewCandidateSalaryExpectation(e.target.value)}
                 />
               </div>
               <div className="grid gap-2">

@@ -227,11 +227,15 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   createCandidateAndApplyToPosition: async ({ clientId, positionId, candidate: candidateData }) => {
     let candidate: Candidate | null = await candidatesRepository.findCandidateByEmail(candidateData.email);
+    const state = get();
 
     if (!candidate) {
       candidate = await candidatesRepository.createCandidate(candidateData);
       set((state) => ({ candidates: [...state.candidates, candidate!] }));
     }
+
+    const position = state.positions.find(p => p.id === positionId) || 
+                     state.positionsByClient[clientId]?.find(p => p.id === positionId);
 
     const newApplication = await applicationsRepository.createApplication({
       candidateId: candidate.id,
@@ -241,6 +245,11 @@ export const useAppStore = create<AppState>((set, get) => ({
       candidateSnapshot: {
         fullName: candidate.fullName,
         currentTitle: candidate.currentTitle,
+      },
+      applicationSnapshot: {
+        appliedRole: candidateData.currentTitle || '',
+        appliedSalaryExpectation: candidateData.notes || '',
+        appliedPositionTitle: position?.title || '',
       },
     });
 
@@ -269,6 +278,9 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
     }
 
+    const position = state.positions.find(p => p.id === positionId) || 
+                     state.positionsByClient[clientId]?.find(p => p.id === positionId);
+
     const newApplication = await applicationsRepository.createApplication({
       candidateId: candidate.id,
       clientId,
@@ -277,6 +289,11 @@ export const useAppStore = create<AppState>((set, get) => ({
       candidateSnapshot: {
         fullName: candidate.fullName,
         currentTitle: candidate.currentTitle,
+      },
+      applicationSnapshot: {
+        appliedRole: candidate.currentTitle || '',
+        appliedSalaryExpectation: candidate.notes || '',
+        appliedPositionTitle: position?.title || '',
       },
     });
 
