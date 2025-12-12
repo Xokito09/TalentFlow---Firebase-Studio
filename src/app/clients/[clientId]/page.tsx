@@ -16,6 +16,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../../components/ui
 import { Card, CardHeader, CardTitle, CardContent } from '../../../components/ui/card';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 
+const statusKey = (s?: string) => (s || "").toLowerCase();
+const isOpen = (p: any) => statusKey(p.status) === "open";
+
 const ClientDetailPage: React.FC = () => {
   const params = useParams();
   const router = useRouter();
@@ -107,19 +110,18 @@ const ClientDetailPage: React.FC = () => {
     CLIENT_STATUS_CONFIG.client;
 
   const clientPositions = positionsByClient[clientId] || mockPositions.filter(pos => pos.clientId === client.id);
-  const openPositions = clientPositions.filter(pos => pos.status === "open");
-  const closedPositions = clientPositions.filter(pos => pos.status !== "open");
+  const openPositions = clientPositions.filter(isOpen);
+  const closedPositions = clientPositions.filter(p => !isOpen(p));
 
   const handleSaveNewPosition = async () => {
     if (!positionTitle.trim()) return;
 
     const newPosition: Omit<Position, "id"> = {
       clientId: client.id,
-      roleTitle: positionTitle,
-      status: "open",
-      dateCreated: new Date().toISOString(),
-      seniority: 'Mid-level',
-      location: client.location,
+      title: positionTitle,
+      description: "",
+      requirements: [],
+      status: "open", // force lowercase
     };
 
     await addPosition(newPosition);
@@ -294,12 +296,12 @@ const ClientDetailPage: React.FC = () => {
                       {openPositions.map(pos => (
                         <li key={pos.id}>
                             <Link href={`/positions/${pos.id}`}
-                                className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm cursor-pointer hover:bg-slate-50 hover:border-slate-300 transition"
+                                className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm cursor-pointer hover:bg-slate-50 hover:border-slate-300 transition focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
                             >
                                 <div>
-                                    <p className="text-sm font-semibold text-slate-900">{pos.roleTitle}</p>
+                                    <p className="text-sm font-semibold text-slate-900">{pos.title}</p>
                                     <p className="text-xs text-slate-600 mt-1">
-                                    {pos.status.charAt(0).toUpperCase() + pos.status.slice(1)} &bull; {new Date(pos.dateCreated).toLocaleDateString()} &bull; {pos.location}
+                                    {pos.status.charAt(0).toUpperCase() + pos.status.slice(1)} {pos.location ? `\u2022 ${pos.location}` : ''}
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -331,12 +333,12 @@ const ClientDetailPage: React.FC = () => {
                       {closedPositions.map(pos => (
                         <li key={pos.id}>
                             <Link href={`/positions/${pos.id}`}
-                                className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm cursor-pointer hover:bg-slate-50 hover:border-slate-300 transition"
+                                className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm cursor-pointer hover:bg-slate-50 hover:border-slate-300 transition focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
                             >
                                 <div>
-                                    <p className="text-sm font-semibold text-slate-900">{pos.roleTitle}</p>
+                                    <p className="text-sm font-semibold text-slate-900">{pos.title}</p>
                                     <p className="text-xs text-slate-600 mt-1">
-                                    {pos.status.charAt(0).toUpperCase() + pos.status.slice(1)} &bull; {new Date(pos.dateCreated).toLocaleDateString()} &bull; {pos.location}
+                                    {pos.status.charAt(0).toUpperCase() + pos.status.slice(1)} {pos.location ? `\u2022 ${pos.location}` : ''}
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-2">

@@ -1,17 +1,30 @@
 "use client";
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAppStore } from '../../lib/store';
 import { Position } from '../../lib/types';
-import Image from 'next/image'; // Import next/image
+// import Image from 'next/image'; // Removed next/image import
 import { Search, ChevronDown, Check } from 'lucide-react';
 import { POSITION_STATUS_CONFIG, POSITION_STATUS_KEYS } from '../../lib/config';
 import { usePagination } from '../../hooks/use-pagination';
 import { useDebounce } from '../../hooks/use-debounce';
 import { FilterDropdown } from '../../components/ui/filter-dropdown';
-import PositionsHeader from './header'; // Import the new header component
+// import PositionsHeader from './header'; // Removed as it's replaced by PageHeader
+import { PageHeader } from "@/components/page-header";
+import { useRouter } from 'next/navigation';
 
 const AllPositionsList: React.FC = () => {
-  const { positions, clients, setViewState } = useAppStore();
+  const router = useRouter();
+  const {
+    positions,
+    positionsLoading,
+    positionsInitialized,
+    loadPositions,
+    clients,
+    clientsInitialized,
+    loadClients,
+    setViewState,
+  } = useAppStore();
+  
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   
@@ -19,6 +32,15 @@ const AllPositionsList: React.FC = () => {
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [activeDropdown, setActiveDropdown] = useState<'client' | 'role' | 'status' | null>(null);
+
+  useEffect(() => {
+    if (!positionsInitialized) {
+      loadPositions();
+    }
+    if (!clientsInitialized) {
+      loadClients();
+    }
+  }, [positionsInitialized, loadPositions, clientsInitialized, loadClients]);
 
   const uniqueRoles = useMemo(() => Array.from(new Set(positions.map(p => p.title))).sort(), [positions]);
 
@@ -66,7 +88,10 @@ const AllPositionsList: React.FC = () => {
   return (
       <div className="max-w-7xl mx-auto px-6 py-8">
            <div className="flex flex-col md:flex-row justify-between items-end md:items-center mb-6 gap-4">
-              <PositionsHeader /> {/* Use the new server component for the header */}
+              <PageHeader
+                title="Positions"
+                description="Manage and track all open and closed positions."
+              />
               <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <input 
@@ -173,47 +198,49 @@ const AllPositionsList: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {paginatedPositions.map(pos => {
-                                const client = clients.find(c => c.id === pos.clientId);
-                                const statusKey = pos.status as keyof typeof POSITION_STATUS_CONFIG;
-                                const statusConfig = POSITION_STATUS_CONFIG[statusKey] || POSITION_STATUS_CONFIG['Open'];
-                                return (
-                                    <tr 
-                                        key={pos.id} 
-                                        onClick={() => setViewState({ type: 'POSITION_DETAIL', positionId: pos.id })}
-                                        className="hover:bg-slate-50 group transition-colors cursor-pointer"
-                                    >
-                                        <td className="px-6 py-4">
-                                            <div className="font-bold text-sm text-gray-800">{pos.title}</div>
-                                            <div className="text-xs text-slate-400">{pos.location}</div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-2">
-                                                {client?.logoUrl && 
-                                                  <Image 
-                                                    src={client.logoUrl} 
-                                                    alt={`${client.name} logo`} 
-                                                    width={20} 
-                                                    height={20} 
-                                                    className="rounded-full"
-                                                  />
-                                                }
-                                                <span className="text-sm font-medium text-slate-700">{client?.name || 'Unknown'}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-slate-600">{pos.department}</td>
-                                        <td className="px-6 py-4">
-                                            <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded whitespace-nowrap ${statusConfig.badgeStyle}`}>
-                                                {statusConfig.label}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                            {filteredPositions.length === 0 && (
-                                <tr>
+                            {positionsLoading ? (
+                                <tr className="h-32">
+                                    <td colSpan={4} className="text-center text-slate-500">
+                                        Loading positions...
+                                    </td>
+                                </tr>
+                            ) : paginatedPositions.length === 0 ? (
+                                <tr className="h-32">
                                     <td colSpan={4} className="px-6 py-12 text-center text-slate-400 italic">No positions found.</td>
                                 </tr>
+                            ) : (
+                                paginatedPositions.map(pos => {
+                                    const client = clients.find(c => c.id === pos.clientId);
+                                    const statusKey = pos.status as keyof typeof POSITION_STATUS_CONFIG;
+                                    const statusConfig = POSITION_STATUS_CONFIG[statusKey] || POSITION_STATUS_CONFIG['Open'];
+                                    return (
+                                        <tr 
+                                            key={pos.id} 
+                                            onClick={() => router.push(`/positions/${pos.id}`)}
+                                            className="hover:bg-slate-50 group transition-colors cursor-pointer"
+                                        >
+                                            <td className="px-6 py-4">
+                                                <div className="font-bold text-sm text-gray-800">{pos.title}</div>
+                                                <div className="text-xs text-slate-400">{pos.location}</div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-2">
+                                                    {/* Replaced Image with initials avatar */}
+                                                    <div className="h-5 w-5 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-medium text-slate-600">
+                                                      {client?.name ? client.name.charAt(0).toUpperCase() : 'U'}
+                                                    </div>
+                                                    <span className="text-sm font-medium text-slate-700">{client?.name || 'Unknown'}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-slate-600">{pos.department || 'N/A'}</td>
+                                            <td className="px-6 py-4">
+                                                <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded whitespace-nowrap ${statusConfig.badgeStyle}`}>
+                                                    {statusConfig.label}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
                             )}
                         </tbody>
                     </table>

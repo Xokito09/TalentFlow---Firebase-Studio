@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import { Timestamp } from "firebase/firestore";
 
 export type NavItem = {
   title: string;
@@ -7,17 +8,27 @@ export type NavItem = {
   label?: string;
 };
 
+export type PipelineStageKey = 'shortlisted' | 'client_interview_1' | 'client_interview_2' | 'hired';
+
 export type Candidate = {
   id: string;
-  name: string;
+  fullName: string;
   email: string;
-  phone: string;
-  avatarUrl: string;
-  currentRole: string;
+  phone?: string;
+  location?: string;
+  currentTitle?: string;
+  skills?: string[];
+  bio?: string;
+  notes?: string;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  // For backward compatibility (will be removed later)
+  name?: string;
+  currentRole?: string;
+  avatarUrl?: string;
   linkedinUrl?: string;
   portfolioUrl?: string;
   resumeUrl?: string;
-  notes?: string;
 };
 
 export type Client = {
@@ -49,12 +60,21 @@ export type Position = {
   department?: string;
 };
 
+// For backward compatibility (will be removed later)
 export type ApplicationStatus = 'Sourced' | 'Screening' | 'Interview' | 'Offer' | 'Hired' | 'Rejected';
 
 export type Application = {
   id: string;
   candidateId: string;
   positionId: string;
-  status: ApplicationStatus;
-  appliedDate: string;
+  clientId: string;
+  stageKey: PipelineStageKey;
+  appliedDate: Timestamp;
+  updatedAt: Timestamp;
+  candidateSnapshot: {
+    fullName: string;
+    currentTitle?: string;
+  };
+  // For backward compatibility (will be removed later)
+  status?: ApplicationStatus;
 };

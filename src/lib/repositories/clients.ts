@@ -1,7 +1,16 @@
-
 import { db } from '../firebase';
 import { Client } from '../types';
-import { collection, getDocs, setDoc, doc } from 'firebase/firestore';
+import { collection, getDocs, setDoc, doc, updateDoc } from 'firebase/firestore';
+
+function removeUndefined(obj: any) {
+  const newObj: { [key: string]: any } = {};
+  for (const key in obj) {
+    if (obj[key] !== undefined) {
+      newObj[key] = obj[key];
+    }
+  }
+  return newObj;
+}
 
 export async function getAllClients(): Promise<Client[]> {
   const clientsCol = collection(db, 'clients');
@@ -29,15 +38,21 @@ export async function getAllClients(): Promise<Client[]> {
   return clientList;
 }
 
-export async function saveClient(client: Client): Promise<void> {
-  const cleanClient = Object.fromEntries(
-    Object.entries(client).filter(([_, value]) => value !== undefined)
-  );
-  await setDoc(doc(db, 'clients', client.id), cleanClient, { merge: true });
+export async function saveClient(client: Omit<Client, 'id'> & { id?: string }): Promise<Client> {
+  const cleanClient = removeUndefined(client);
+  if (client.id) {
+    await setDoc(doc(db, 'clients', client.id), cleanClient, { merge: true });
+    return cleanClient as Client;
+  } else {
+    const newDocRef = doc(collection(db, 'clients'));
+    await setDoc(newDocRef, cleanClient);
+    return { ...cleanClient, id: newDocRef.id } as Client;
+  }
 }
 
 export async function updateClient(client: Client): Promise<void> {
   const { id, ...data } = client;
   const docRef = doc(db, "clients", id);
-  await setDoc(docRef, data, { merge: true });
+  const dataToUpdate = removeUndefined(data);
+  await setDoc(docRef, dataToUpdate, { merge: true });
 }

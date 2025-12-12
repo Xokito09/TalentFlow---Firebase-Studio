@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from 'next/navigation';
 import {
   Table,
   TableBody,
@@ -17,29 +18,40 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { MoreHorizontal, PlusCircle, FileDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { candidates, applications } from "@/lib/data";
-import CandidatesHeader from "./header"; // Import the new server component for the header
+import { PageHeader } from "@/components/page-header";
+import { useAppStore } from "@/lib/store";
+import { exportCandidatePdf } from '@/lib/utils';
 
-const ITEMS_PER_PAGE = 10; // Define how many items per page
+const ITEMS_PER_PAGE = 10;
 
 export default function CandidatesPage() {
+  const router = useRouter();
   const [currentPage, setCurrentPage] = useState(1);
 
+  const candidates = useAppStore((s) => s.candidates);
+  const candidatesLoading = useAppStore((s) => s.candidatesLoading);
+  const candidatesInitialized = useAppStore((s) => s.candidatesInitialized);
+  const loadCandidates = useAppStore((s) => s.loadCandidates);
+  const applicationsByPosition = useAppStore((s) => s.applicationsByPosition);
+
+  useEffect(() => {
+    if (!candidatesInitialized) {
+      loadCandidates();
+    }
+  }, [candidatesInitialized, loadCandidates]);
+
   const handleExport = (candidateId: string) => {
-    console.log(`Exporting profile for candidate ${candidateId}`);
-    // In a real app, this would trigger a PDF generation service
+    exportCandidatePdf(candidateId);
   };
 
-  // Pre-calculate application counts for optimization
-  const applicationCounts = applications.reduce((acc, app) => {
+  const applicationCounts = Object.values(applicationsByPosition).flat().reduce((acc, app) => {
     acc[app.candidateId] = (acc[app.candidateId] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
-  // Calculate pagination
   const indexOfLastCandidate = currentPage * ITEMS_PER_PAGE;
   const indexOfFirstCandidate = indexOfLastCandidate - ITEMS_PER_PAGE;
   const currentCandidates = candidates.slice(indexOfFirstCandidate, indexOfLastCandidate);
@@ -56,7 +68,10 @@ export default function CandidatesPage() {
   return (
     <>
       <div className="flex items-center justify-between">
-        <CandidatesHeader /> {/* Use the new server component for the header */}
+        <PageHeader
+          title="Candidates"
+          description="Manage your talent pool and candidate information."
+        />
         <Button>
           <PlusCircle className="mr-2" />
           Add Candidate
@@ -72,30 +87,43 @@ export default function CandidatesPage() {
               <TableRow>
                 <TableHead>Candidate</TableHead>
                 <TableHead>Contact</TableHead>
-                <TableHead>Current Role</TableHead>
+                <TableHead>Current Title</TableHead>
                 <TableHead className="text-center">Applications</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {currentCandidates.map((candidate) => {
+              {candidatesLoading && (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                    Loading candidates...
+                  </TableCell>
+                </TableRow>
+              )}
+              {!candidatesLoading && currentCandidates.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                    No candidates found.
+                  </TableCell>
+                </TableRow>
+              )}
+              {!candidatesLoading && currentCandidates.map((candidate) => {
                 const applicationCount = applicationCounts[candidate.id] || 0;
                 return (
                   <TableRow key={candidate.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar className="h-10 w-10 border">
-                          <AvatarImage src={candidate.avatarUrl} alt={candidate.name} data-ai-hint="person face" />
-                          <AvatarFallback>{candidate.name.charAt(0)}</AvatarFallback>
+                          <AvatarFallback>{candidate.fullName.charAt(0).toUpperCase()}</AvatarFallback>
                         </Avatar>
-                        <div className="font-medium">{candidate.name}</div>
+                        <div className="font-medium">{candidate.fullName}</div>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div>{candidate.email}</div>
-                      <div className="text-sm text-muted-foreground">{candidate.phone}</div>
+                      {candidate.phone && <div className="text-sm text-muted-foreground">{candidate.phone}</div>}
                     </TableCell>
-                    <TableCell>{candidate.currentRole}</TableCell>
+                    <TableCell>{candidate.currentTitle}</TableCell>
                     <TableCell className="text-center">
                       <Badge variant="secondary" className="font-medium">
                         {applicationCount}
@@ -109,7 +137,7 @@ export default function CandidatesPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>View Profile</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => router.push(`/candidates/${candidate.id}`)}>View Profile</DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleExport(candidate.id)}>
                              <FileDown className="mr-2 h-4 w-4" />
                             Export as PDF
