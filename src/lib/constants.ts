@@ -1,0 +1,1 @@
+export const MAX_CLIENT_LOGO_BYTES = 300 * 1024; // 300 KB

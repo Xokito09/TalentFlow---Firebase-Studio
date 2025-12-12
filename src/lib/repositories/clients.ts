@@ -10,16 +10,34 @@ export async function getAllClients(): Promise<Client[]> {
     const data = doc.data();
     return {
       id: doc.id,
-      name: data.name,
-      industry: data.industry,
-      location: data.location,
-      logo: data.logo,
-      ownerId: data.ownerId,
+      name: data.name ?? "",
+      industry: data.industry ?? "",
+      location: data.location ?? "",
+      website: data.website ?? "",
+      pointOfContact: data.pointOfContact ?? "",
+      contactEmail: data.contactEmail ?? "",
+      taxId: data.taxId ?? "",
+      billingAddress: data.billingAddress ?? "",
+      billingEmail: data.billingEmail ?? "",
+      paymentTerms: data.paymentTerms ?? "",
+      notes: data.notes ?? "",
+      logoUrl: data.logoUrl ?? "",
+      relationshipStatus: data.relationshipStatus ?? "prospect",
+      ownerId: data.ownerId ?? "",
     } as Client;
   });
   return clientList;
 }
 
 export async function saveClient(client: Client): Promise<void> {
-  await setDoc(doc(db, 'clients', client.id), client);
+  const cleanClient = Object.fromEntries(
+    Object.entries(client).filter(([_, value]) => value !== undefined)
+  );
+  await setDoc(doc(db, 'clients', client.id), cleanClient, { merge: true });
+}
+
+export async function updateClient(client: Client): Promise<void> {
+  const { id, ...data } = client;
+  const docRef = doc(db, "clients", id);
+  await setDoc(docRef, data, { merge: true });
 }

@@ -2,6 +2,7 @@ import React from 'react';
 import { Client } from '../../lib/types';
 import { CLIENT_STATUS_CONFIG } from '../../lib/config';
 import { MoreHorizontal } from 'lucide-react';
+import Link from "next/link";
 
 type ClientCardProps = {
   client: Client;
@@ -15,8 +16,8 @@ export const ClientCard: React.FC<ClientCardProps> = ({ client, onClick, onEdit 
     CLIENT_STATUS_CONFIG.client;
 
   return (
-    <div 
-        onClick={onClick}
+    <Link 
+        href={`/clients/${client.id}`}
         className="bg-white border border-slate-200 rounded-xl p-4 flex items-center gap-4 hover:border-purple-500 hover:shadow-md transition-all cursor-pointer"
     >
         <div className="w-16 h-16 rounded-lg bg-slate-200 flex items-center justify-center text-slate-500 text-lg font-semibold">
@@ -42,6 +43,6 @@ export const ClientCard: React.FC<ClientCardProps> = ({ client, onClick, onEdit 
                 </div>
             </div>
         </div>
-    </div>
+    </Link>
   );
 };
