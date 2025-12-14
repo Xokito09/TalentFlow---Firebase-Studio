@@ -23,6 +23,7 @@ const ApplicationCvPage: React.FC = () => {
 
   const from = searchParams.get("from");
   const fromPositionId = searchParams.get("positionId");
+  const fromCandidateId = searchParams.get("candidateId");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -53,22 +54,22 @@ const ApplicationCvPage: React.FC = () => {
   const handleBack = () => {
     if (from === "position" && fromPositionId) {
       router.push(`/positions/${fromPositionId}`);
-    } else if (candidate?.id) {
-      router.push(`/candidates/${candidate.id}`);
+    } else if (from === "candidate" && fromCandidateId) {
+      router.push(`/candidates/${fromCandidateId}`);
     } else {
       router.back();
     }
   };
 
   const backButtonLabel = useMemo(() => {
-    if (from === "position" && fromPositionId) {
+    if (from === "position") {
       return "Back to Position";
-    } else if (candidate?.id) {
+    } else if (from === "candidate") {
       return "Back to Candidate Profile";
     } else {
       return "Back";
     }
-  }, [from, fromPositionId, candidate]);
+  }, [from]);
 
   if (loading) {
     return <div className="p-8 text-center">Loading application...</div>;

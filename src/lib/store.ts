@@ -5,7 +5,7 @@ import * as candidatesRepository from './repositories/candidates';
 import * as applicationsRepository from './repositories/applications';
 import { getPositionsByClientId, getAllPositions, createPosition, updatePosition } from './repositories/positions';
 
-type ViewState = 
+type ViewState =
   | { type: 'CLIENT_LIST', activeTab?: 'partner' | 'prospect' }
   | { type: 'CLIENT_DETAIL', clientId: string, previousView?: ViewState }
   | { type: 'CANDIDATE_LIST' }
@@ -28,7 +28,7 @@ type AppState = {
   addClient: (client: Client) => Promise<void>;
   updateClient: (client: Client) => Promise<void>;
   loadClients: () => Promise<void>;
-  
+
   positionsByClient: Record<string, Position[]>;
   positionsLoadingByClient: Record<string, boolean>;
   loadPositionsForClient: (clientId: string) => Promise<void>;
@@ -48,7 +48,15 @@ type AppState = {
     clientId: string;
     positionId: string;
     candidateId: string;
+    appliedCompensation?: string;
   }) => Promise<{ created: boolean }>;
+};
+
+const getSalaryFromNotes = (notes: string | undefined): string => {
+  if (notes && notes.startsWith('SalaryExpectationAtApply: ')) {
+    return notes.substring('SalaryExpectationAtApply: '.length);
+  }
+  return '';
 };
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -70,7 +78,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         ...client,
         relationshipStatus: client.relationshipStatus || 'client',
     };
-    await clientsRepository.saveClient(newClient); 
+    await clientsRepository.saveClient(newClient);
     set((state) => ({ clients: [...state.clients, newClient] }));
   },
   updateClient: async (updatedClient) => {
@@ -107,7 +115,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
     set((state) => ({
       positionsLoadingByClient: {
-        ...state.positionsLoadingByClient,
+        ...state.positionsLoadingByPosition,
         [clientId]: true,
       },
     }));
@@ -132,8 +140,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       return {
         positionsByClient: updatedPositionsByClient,
         positions: newOrUpdatedGlobalPositions,
-        positionsLoadingByClient: {
-          ...state.positionsLoadingByClient,
+        positionsLoadingByPosition: {
+          ...state.positionsLoadingByPosition,
           [clientId]: false,
         },
       };
@@ -165,7 +173,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       } else {
         updatedPositions = [position, ...(state.positions ?? [])];
       }
-      
+
       return {
         positions: updatedPositions,
         positionsByClient: Object.fromEntries(
@@ -233,15 +241,19 @@ export const useAppStore = create<AppState>((set, get) => ({
       set((state) => ({ candidates: [...state.candidates, candidate!] }));
     }
 
+    const state = get(); // Re-get state after potential candidate creation
+    const position = state.positions.find(p => p.id === positionId) ||
+                     state.positionsByClient[clientId]?.find(p => p.id === positionId);
+
     const { application, created } = await applicationsRepository.createOrGetApplication({
       candidateId: candidate.id,
       clientId,
       positionId,
       stageKey: 'shortlisted',
-      appliedRoleTitle: candidateData.currentTitle,
-      appliedCompensation: appliedCompensation,
-      professionalBackgroundAtApply: candidate.professionalBackground,
-      mainProjectsAtApply: candidate.mainProjects
+      appliedRoleTitle: candidateData.currentTitle || '',
+      appliedCompensation: appliedCompensation || '',
+      professionalBackgroundAtApply: candidate.professionalBackground || '',
+      mainProjectsAtApply: candidate.mainProjects || [],
     });
 
     if (created) {
@@ -262,7 +274,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     return { created };
   },
 
-  addExistingCandidateToPosition: async ({ clientId, positionId, candidateId }) => {
+  addExistingCandidateToPosition: async ({ clientId, positionId, candidateId, appliedCompensation }) => {
     const state = get();
     let candidate = state.candidates.find(c => c.id === candidateId);
 
@@ -276,12 +288,18 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
     }
 
+    const position = state.positions.find(p => p.id === positionId) ||
+                     state.positionsByClient[clientId]?.find(p => p.id === positionId);
+
     const { application, created } = await applicationsRepository.createOrGetApplication({
       candidateId: candidate.id,
       clientId,
       positionId,
       stageKey: 'shortlisted',
-      appliedRoleTitle: candidate.currentTitle,
+      appliedRoleTitle: candidate.currentTitle || '',
+      appliedCompensation: appliedCompensation || '',
+      professionalBackgroundAtApply: candidate.professionalBackground || '',
+      mainProjectsAtApply: candidate.mainProjects || [],
     });
 
     if (created) {

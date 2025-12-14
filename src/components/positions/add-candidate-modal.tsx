@@ -11,6 +11,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -23,6 +24,15 @@ interface AddCandidateModalProps {
   clientId: string;
   positionId: string;
 }
+
+const parseList = (value: string): string[] | undefined => {
+  const items = value
+    .split(/\r?\n|,/g)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  return items.length ? items : undefined;
+};
 
 const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
   isOpen,
@@ -40,6 +50,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
 
   const [activeTab, setActiveTab] = useState('new');
 
+  // New candidate base fields
   const [newCandidateFullName, setNewCandidateFullName] = useState('');
   const [newCandidateEmail, setNewCandidateEmail] = useState('');
   const [newCandidateCurrentTitle, setNewCandidateCurrentTitle] = useState('');
@@ -47,7 +58,17 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
   const [newCandidateLocation, setNewCandidateLocation] = useState('');
   const [newCandidateSalaryExpectation, setNewCandidateSalaryExpectation] = useState('');
 
+  // New candidate profile fields (optional)
+  const [newCandidateLinkedinUrl, setNewCandidateLinkedinUrl] = useState('');
+  const [newCandidateAcademicBackground, setNewCandidateAcademicBackground] = useState('');
+  const [newCandidateLanguages, setNewCandidateLanguages] = useState('');
+  const [newCandidateProfessionalBackground, setNewCandidateProfessionalBackground] = useState('');
+  const [newCandidateMainProjects, setNewCandidateMainProjects] = useState('');
+  const [newCandidateHardSkills, setNewCandidateHardSkills] = useState('');
+
+  // Existing candidate fields
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | undefined>(undefined);
+  const [existingCandidateSalaryExpectation, setExistingCandidateSalaryExpectation] = useState('');
 
   useEffect(() => {
     if (isOpen && !candidatesInitialized) {
@@ -62,7 +83,17 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
     setNewCandidatePhone('');
     setNewCandidateLocation('');
     setNewCandidateSalaryExpectation('');
+
+    setNewCandidateLinkedinUrl('');
+    setNewCandidateAcademicBackground('');
+    setNewCandidateLanguages('');
+    setNewCandidateProfessionalBackground('');
+    setNewCandidateMainProjects('');
+    setNewCandidateHardSkills('');
+
     setSelectedCandidateId(undefined);
+    setExistingCandidateSalaryExpectation('');
+
     setActiveTab('new');
   };
 
@@ -79,6 +110,14 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
       currentTitle: newCandidateCurrentTitle || undefined,
       phone: newCandidatePhone || undefined,
       location: newCandidateLocation || undefined,
+
+      // Profile fields
+      linkedinUrl: newCandidateLinkedinUrl.trim() || undefined,
+      academicBackground: parseList(newCandidateAcademicBackground),
+      languages: parseList(newCandidateLanguages),
+      professionalBackground: newCandidateProfessionalBackground.trim() || undefined,
+      mainProjects: parseList(newCandidateMainProjects),
+      hardSkills: parseList(newCandidateHardSkills),
     };
 
     const { created } = await createCandidateAndApplyToPosition({
@@ -87,7 +126,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
       candidate: candidateData,
       appliedCompensation: newCandidateSalaryExpectation,
     });
-    
+
     if (created) {
       resetForm();
       onClose();
@@ -105,8 +144,13 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
       return;
     }
 
-    const { created } = await addExistingCandidateToPosition({ clientId, positionId, candidateId: selectedCandidateId });
-    
+    const { created } = await addExistingCandidateToPosition({
+      clientId,
+      positionId,
+      candidateId: selectedCandidateId,
+      appliedCompensation: existingCandidateSalaryExpectation || undefined,
+    });
+
     if (created) {
       resetForm();
       onClose();
@@ -125,7 +169,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
         onClose();
       }
     }}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add Candidate to Pipeline</DialogTitle>
           <DialogDescription>
@@ -138,6 +182,8 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
             <TabsTrigger value="new">New Candidate</TabsTrigger>
             <TabsTrigger value="existing">Existing Candidate</TabsTrigger>
           </TabsList>
+
+          {/* NEW */}
           <TabsContent value="new" className="pt-4">
             <form onSubmit={handleNewCandidateSubmit} className="space-y-4">
               <div className="grid gap-2">
@@ -150,6 +196,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
                   required
                 />
               </div>
+
               <div className="grid gap-2">
                 <Label htmlFor="email">Email <span className="text-red-500">*</span></Label>
                 <Input
@@ -161,6 +208,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
                   required
                 />
               </div>
+
               <div className="grid gap-2">
                 <Label htmlFor="currentTitle">Current Title</Label>
                 <Input
@@ -170,6 +218,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
                   onChange={(e) => setNewCandidateCurrentTitle(e.target.value)}
                 />
               </div>
+
               <div className="grid gap-2">
                 <Label htmlFor="salaryExpectation">Salary expectation for this application</Label>
                 <Input
@@ -179,6 +228,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
                   onChange={(e) => setNewCandidateSalaryExpectation(e.target.value)}
                 />
               </div>
+
               <div className="grid gap-2">
                 <Label htmlFor="phone">Phone</Label>
                 <Input
@@ -188,6 +238,7 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
                   onChange={(e) => setNewCandidatePhone(e.target.value)}
                 />
               </div>
+
               <div className="grid gap-2">
                 <Label htmlFor="location">Location</Label>
                 <Input
@@ -197,12 +248,84 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
                   onChange={(e) => setNewCandidateLocation(e.target.value)}
                 />
               </div>
+
+              {/* Optional Profile Fields */}
+              <details className="rounded-md border p-3">
+                <summary className="cursor-pointer text-sm font-medium">
+                  Profile details (optional) — this is what fills the PDF
+                </summary>
+
+                <div className="pt-4 space-y-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="linkedinUrl">LinkedIn URL</Label>
+                    <Input
+                      id="linkedinUrl"
+                      placeholder="https://linkedin.com/in/username"
+                      value={newCandidateLinkedinUrl}
+                      onChange={(e) => setNewCandidateLinkedinUrl(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="academicBackground">Academic Background (one per line)</Label>
+                    <Textarea
+                      id="academicBackground"
+                      placeholder={"BSc Computer Science - University X\nMBA - University Y"}
+                      value={newCandidateAcademicBackground}
+                      onChange={(e) => setNewCandidateAcademicBackground(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="languages">Languages (one per line)</Label>
+                    <Textarea
+                      id="languages"
+                      placeholder={"English (Fluent)\nPortuguese (Native)"}
+                      value={newCandidateLanguages}
+                      onChange={(e) => setNewCandidateLanguages(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="professionalBackground">Professional Background</Label>
+                    <Textarea
+                      id="professionalBackground"
+                      placeholder="Short narrative summary of the candidate's background..."
+                      value={newCandidateProfessionalBackground}
+                      onChange={(e) => setNewCandidateProfessionalBackground(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="mainProjects">Main Projects (one per line)</Label>
+                    <Textarea
+                      id="mainProjects"
+                      placeholder={"Project A — impact/results\nProject B — impact/results"}
+                      value={newCandidateMainProjects}
+                      onChange={(e) => setNewCandidateMainProjects(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="hardSkills">Hard Skills (one per line or comma-separated)</Label>
+                    <Textarea
+                      id="hardSkills"
+                      placeholder={"React\nNode.js\nFirebase\nAWS"}
+                      value={newCandidateHardSkills}
+                      onChange={(e) => setNewCandidateHardSkills(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </details>
+
               <DialogFooter>
                 <Button type="submit">Add New Candidate</Button>
               </DialogFooter>
             </form>
           </TabsContent>
-          <TabsContent value="existing" className="pt-4">
+
+          {/* EXISTING */}
+          <TabsContent value="existing" className="pt-4 space-y-4">
             <div className="grid gap-2">
               <Label htmlFor="existing-candidate">Select Candidate</Label>
               <Select value={selectedCandidateId} onValueChange={setSelectedCandidateId}>
@@ -221,6 +344,17 @@ const AddCandidateModal: React.FC<AddCandidateModalProps> = ({
                 </SelectContent>
               </Select>
             </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="existingSalaryExpectation">Salary expectation for this application</Label>
+              <Input
+                id="existingSalaryExpectation"
+                placeholder="e.g., $120,000 - $140,000"
+                value={existingCandidateSalaryExpectation}
+                onChange={(e) => setExistingCandidateSalaryExpectation(e.target.value)}
+              />
+            </div>
+
             <DialogFooter className="mt-4">
               <Button onClick={handleExistingCandidateSubmit} disabled={!selectedCandidateId}>
                 Add Existing Candidate
