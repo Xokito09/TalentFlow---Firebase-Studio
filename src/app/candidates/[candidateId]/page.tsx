@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from "next/link";
 import { useAppStore } from '@/lib/store';
 import * as candidatesRepository from '@/lib/repositories/candidates';
-import * as applicationsRepository from '@/lib/repositories/applications';
+import *s applicationsRepository from '@/lib/repositories/applications';
 import { Candidate, Application, PipelineStageKey } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -39,11 +39,12 @@ const CandidateProfilePage: React.FC = () => {
   const {
     candidates,
     loadCandidates,
-    positionsByClient,
-    loadPositionsForClient,
     clients,
     clientsInitialized,
-    loadClients
+    loadClients,
+    positions,
+    positionsInitialized,
+    loadPositions,
   } = useAppStore();
 
   const [candidate, setCandidate] = useState<Candidate | null>(null);
@@ -81,19 +82,16 @@ const CandidateProfilePage: React.FC = () => {
     }
   }, [clientsInitialized, loadClients]);
 
+  // New useEffect to load all positions once
   useEffect(() => {
-    if (clientsInitialized && clients.length > 0) {
-      clients.forEach(client => {
-        if (!positionsByClient[client.id]) {
-          loadPositionsForClient(client.id);
-        }
-      });
+    if (!positionsInitialized) {
+      loadPositions();
     }
-  }, [clientsInitialized, clients, positionsByClient, loadPositionsForClient]);
+  }, [positionsInitialized, loadPositions]);
 
   const getPositionTitle = (positionId: string) => {
-    const allPositions = Object.values(positionsByClient).flat();
-    const position = allPositions.find(p => p.id === positionId);
+    // Use the global positions list instead of positionsByClient
+    const position = positions.find(p => p.id === positionId);
     return position?.title || "Unknown Position";
   };
 

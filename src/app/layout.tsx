@@ -1,11 +1,10 @@
 import type { Metadata } from 'next';
-import { Inter, Space_Grotesk } from 'next/font/google'; // Import font optimizers
-import { AppShell } from '@/components/app-shell';
-import { Toaster } from "@/components/ui/toaster"
+import { Inter, Space_Grotesk } from 'next/font/google';
+import { Toaster } from "@/components/ui/toaster";
 import './globals.css';
-import { cn } from '@/lib/utils'; // Assuming cn utility exists for class concatenation
+import { cn } from '@/lib/utils';
+import { AppShellProvider } from '@/components/app-shell-provider';
 
-// Configure the fonts with variable support
 const fontSans = Inter({
   subsets: ['latin'],
   variable: '--font-sans',
@@ -30,7 +29,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      {/* Removed the manual <link> tags for Google Fonts */}
       <body
         className={cn(
           "min-h-screen bg-background font-sans antialiased",
@@ -38,9 +36,9 @@ export default function RootLayout({
           fontHeading.variable
         )}
       >
-        <AppShell>
+        <AppShellProvider>
           {children}
-        </AppShell>
+        </AppShellProvider>
         <Toaster />
       </body>
     </html>

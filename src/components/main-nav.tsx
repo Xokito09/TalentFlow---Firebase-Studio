@@ -40,17 +40,16 @@ export function MainNav() {
     <SidebarMenu>
       {navItems.map((item) => (
         <SidebarMenuItem key={item.href}>
-          <Link href={item.href}>
-            {/* @next-codemod-error This Link previously used the now removed `legacyBehavior` prop, and has a child that might not be an anchor. The codemod bailed out of lifting the child props to the Link. Check that the child component does not render an anchor, and potentially move the props manually to Link. */
-            }
-            <SidebarMenuButton
-              isActive={pathname === item.href}
-              tooltip={item.title}
-            >
+          <SidebarMenuButton
+            asChild
+            isActive={pathname === item.href}
+            tooltip={item.title}
+          >
+            <Link href={item.href}>
               <item.icon />
               <span>{item.title}</span>
-            </SidebarMenuButton>
-          </Link>
+            </Link>
+          </SidebarMenuButton>
         </SidebarMenuItem>
       ))}
     </SidebarMenu>

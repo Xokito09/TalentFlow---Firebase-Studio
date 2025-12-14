@@ -10,13 +10,8 @@ import {
   SidebarFooter,
   SidebarTrigger,
   SidebarInset,
-  useSidebar,
 } from "@/components/ui/sidebar";
 import {
-  LayoutGrid,
-  Briefcase,
-  Users,
-  Building2,
   Settings,
   User,
 } from "lucide-react";
@@ -34,15 +29,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const [isMounted, setIsMounted] = React.useState(false);
-
-  React.useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  if (!isMounted) {
-    return null;
-  }
+  // Removed isMounted state and conditional return null to fix hydration mismatch and "blank screen" issue.
+  // The AppShellProvider handles dynamic import with ssr: false, so this component only runs on client.
 
   return (
     <SidebarProvider>

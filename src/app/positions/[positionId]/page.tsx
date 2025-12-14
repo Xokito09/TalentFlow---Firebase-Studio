@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,10 +10,14 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { ArrowLeft, Plus, ChevronDown, Settings, FileText, MapPin, Wallet } from 'lucide-react';
 import { Application, PipelineStageKey, Position as PositionType, Candidate } from '@/lib/types';
-import AddCandidateModal from '@/components/positions/add-candidate-modal';
 import * as positionsRepository from '@/lib/repositories/positions';
 import * as candidateRepository from '@/lib/repositories/candidates';
 import { formatFirestoreDate } from '@/lib/utils';
+
+const AddCandidateModal = dynamic(() => import('@/components/positions/add-candidate-modal'), {
+  loading: () => <p>Loading...</p>,
+  ssr: false
+});
 
 const POSITION_STATUS_CONFIG: { [key: string]: { label: string; className: string; dotClassName: string } } = {
   open: { label: "OPEN", className: "bg-green-100 text-green-700", dotClassName: "bg-green-500" },
@@ -297,12 +302,14 @@ const PositionDetailPage: React.FC = () => {
         ))}
       </div>
 
-      <AddCandidateModal
-        isOpen={isAddCandidateModalOpen}
-        onClose={() => setIsAddCandidateModalOpen(false)}
-        clientId={client?.id || ''}
-        positionId={positionId}
-      />
+      {isAddCandidateModalOpen && (
+        <AddCandidateModal
+          isOpen={isAddCandidateModalOpen}
+          onClose={() => setIsAddCandidateModalOpen(false)}
+          clientId={client?.id || ''}
+          positionId={positionId}
+        />
+      )}
     </div>
   );
 };
