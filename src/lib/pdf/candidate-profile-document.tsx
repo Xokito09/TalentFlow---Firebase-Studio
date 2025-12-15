@@ -1,5 +1,8 @@
 import React from 'react';
-import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, View, Text, Image, StyleSheet, Font, Link } from '@react-pdf/renderer';
+
+// 1) Disable global hyphenation
+Font.registerHyphenationCallback((word) => [word]);
 
 // Define Props interface based on CandidateReportPageProps
 interface CandidateProfileDocumentProps {
@@ -28,231 +31,239 @@ const normalizeToArray = (value?: string | string[]): string[] => {
       .filter(part => part.length > 0);
   };
   
+// Helpers for unit conversion
+const PT_PER_MM = 72 / 25.4;
+const mm = (v: number) => v * PT_PER_MM;
 
 const styles = StyleSheet.create({
   page: {
     backgroundColor: '#F5F7FB',
-    padding: 45.35, // 16mm
+    paddingTop: 36,
+    paddingBottom: 36,
+    paddingLeft: 36,
+    paddingRight: 36,
     fontFamily: 'Helvetica',
   },
   headerCard: {
     backgroundColor: '#FFFFFF',
-    border: '1px solid #E6E8EF',
-    borderRadius: 20,
-    padding: 28,
-    marginBottom: 34,
+    borderWidth: 0.5,
+    borderColor: '#E6E8EF',
+    borderStyle: 'solid',
+    borderRadius: 12,
+    padding: 24,
+    marginBottom: 20,
   },
   brandRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingBottom: 18,
-    borderBottom: '1px solid #EEF2F7',
+    marginBottom: 14,
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#EEF2F7',
+    borderBottomStyle: 'solid',
+    paddingBottom: 14,
   },
   brandLeft: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   logoBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 24,
+    height: 24,
+    borderRadius: 6,
     backgroundColor: '#0F172A',
-    marginRight: 12,
+    marginRight: 10,
   },
   brandText: {
-    fontSize: 14,
+    fontSize: 10,
     fontWeight: 'bold',
-    letterSpacing: '0.18em',
+    letterSpacing: 2,
     textTransform: 'uppercase',
     color: '#0F172A',
   },
   projectRole: {
-    textAlign: 'right',
+    flexDirection: 'row',
+    alignItems: 'baseline',
   },
   projectLabel: {
-    fontSize: 11,
+    fontSize: 8,
     fontWeight: 'bold',
     textTransform: 'uppercase',
-    letterSpacing: '0.18em',
+    letterSpacing: 1.0,
     color: '#94A3B8',
+    marginRight: 6,
   },
   projectValue: {
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: 'bold',
     textTransform: 'uppercase',
-    letterSpacing: '0.08em',
+    letterSpacing: 0.5,
     color: '#16A34A',
   },
   identityRow: {
     flexDirection: 'row',
-    marginTop: 22,
-    marginBottom: 18,
+    alignItems: 'center',
+    marginBottom: 20,
   },
   photoBox: {
-    width: 110,
-    height: 110,
-    borderRadius: 16,
-    border: '1px solid #E6E8EF',
+    width: 80,
+    height: 80,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E6E8EF',
+    borderStyle: 'solid',
     backgroundColor: '#F1F5F9',
-    marginRight: 22,
+    marginRight: 20,
+    overflow: 'hidden',
   },
   nameAndTitle: {
-    flex: 1,
+    flexGrow: 1,
+    justifyContent: 'center',
   },
   name: {
-    fontSize: 52,
-    lineHeight: 1,
-    fontWeight: 'bold',
-    color: '#0F172A',
-  },
-  roleTitle: {
-    marginTop: 8,
-    fontSize: 22,
+    fontSize: 28,
     lineHeight: 1.2,
     fontWeight: 'bold',
+    color: '#0F172A',
     textTransform: 'uppercase',
-    letterSpacing: '0.04em',
+    letterSpacing: -0.5,
+  },
+  roleTitle: {
+    marginTop: 4,
+    fontSize: 12,
+    fontWeight: 'bold',
     color: '#16A34A',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   contactRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 16,
-    paddingTop: 18,
-    borderTop: '1px solid #EEF2F7',
+    marginTop: 10,
+    flexWrap: 'wrap',
   },
   contactItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    fontSize: 14,
-    color: '#475569',
+    fontSize: 9,
+    color: '#64748B',
+    marginRight: 12,
   },
-  contactSeparator: {
-    width: 1,
-    height: 14,
-    backgroundColor: '#EEF2F7',
-    marginHorizontal: 16,
+  contactIcon: {
+    width: 10,
+    height: 10,
+    marginRight: 4,
   },
   infoRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 22,
-    paddingTop: 22,
-    borderTop: '1px solid #EEF2F7',
+    borderTopWidth: 0.5,
+    borderTopColor: '#EEF2F7',
+    borderTopStyle: 'solid',
+    paddingTop: 16,
   },
   infoColumn: {
-    width: '30%',
+    flexGrow: 1,
+    flexBasis: 0,
   },
-  infoLabelRow: {
+  infoLabel: {
+    fontSize: 8,
+    fontWeight: 'bold',
+    color: '#94A3B8',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 4,
     flexDirection: 'row',
     alignItems: 'center',
   },
-  infoIcon: {
-    width: 18,
-    height: 18,
-    marginRight: 8,
-    color: '#94A3B8',
-  },
-  infoLabel: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
-    letterSpacing: '0.18em',
-    color: '#94A3B8',
-  },
   infoValue: {
-    fontSize: 18,
-    lineHeight: 1.2,
+    fontSize: 10,
     fontWeight: 'bold',
     color: '#0F172A',
-    marginTop: 10,
   },
   bodyGrid: {
     flexDirection: 'row',
+    marginTop: 8,
   },
   leftColumn: {
-    width: '66%',
-    paddingRight: 22,
+    width: '72%',
+    paddingRight: 24,
   },
   rightColumn: {
-    width: '34%',
-    paddingLeft: 22,
+    width: '28%',
   },
   sectionHeading: {
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: 'bold',
-    textTransform: 'uppercase',
-    letterSpacing: '0.18em',
     color: '#94A3B8',
-  },
-  sectionDivider: {
-    height: 1,
-    backgroundColor: '#EEF2F7',
-    marginTop: 12,
-    marginBottom: 18,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+    marginBottom: 8,
   },
   paragraph: {
-    fontSize: 16,
-    lineHeight: 1.875,
-    fontWeight: 'normal',
-    color: '#475569',
+    fontSize: 10,
+    lineHeight: 1.6,
+    color: '#334155',
+    marginBottom: 16,
+    textAlign: 'justify',
+  },
+  projectsList: {
+    marginTop: 8,
+  },
+  projectItem: {
+    flexDirection: 'row',
+    marginBottom: 8,
+    alignItems: 'flex-start',
+  },
+  bullet: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: '#16A34A',
+    marginTop: 5,
+    marginRight: 8,
+  },
+  projectText: {
+    flex: 1,
+    fontSize: 10,
+    lineHeight: 1.5,
+    color: '#334155',
   },
   skillsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    // Removed gap property
   },
   chip: {
-    backgroundColor: '#F8FAFC',
-    border: '1px solid #E2E8F0',
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    marginRight: 12,
-    marginBottom: 12,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 0.5,
+    borderColor: '#E2E8F0',
+    borderRadius: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    marginRight: 6,
+    marginBottom: 6,
   },
   chipText: {
-    fontSize: 12,
+    fontSize: 7,
     fontWeight: 'bold',
+    color: '#475569',
     textTransform: 'uppercase',
-    letterSpacing: '0.12em',
-    color: '#475569',
-  },
-  projectsList: {
-    marginTop: 34,
-  },
-  projectItem: {
-    flexDirection: 'row',
-    marginBottom: 18,
-  },
-  bullet: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#16A34A',
-    marginRight: 14,
-    marginTop: 6,
-  },
-  projectText: {
-    flex: 1,
-    fontSize: 15,
-    lineHeight: 1.6,
-    fontWeight: 'normal',
-    color: '#475569',
   },
   footer: {
     position: 'absolute',
-    bottom: 22,
-    left: 45.35,
-    right: 45.35,
+    bottom: 24,
+    left: 36,
+    right: 36,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    fontSize: 10,
-    fontWeight: 'bold',
+    borderTopWidth: 0.5,
+    borderTopColor: '#E2E8F0',
+    paddingTop: 8,
+  },
+  footerText: {
+    fontSize: 7,
+    color: '#94A3B8',
     textTransform: 'uppercase',
-    letterSpacing: '0.22em',
-    color: '#CBD5E1',
+    letterSpacing: 1,
   },
 });
 
@@ -285,6 +296,7 @@ export const CandidateProfileDocument: React.FC<CandidateProfileDocumentProps> =
   <Document>
     <Page size="A4" style={styles.page}>
       <View style={styles.headerCard} wrap={false}>
+        {/* Brand Row */}
         <View style={styles.brandRow}>
           <View style={styles.brandLeft}>
             <View style={styles.logoBox} />
@@ -296,55 +308,57 @@ export const CandidateProfileDocument: React.FC<CandidateProfileDocumentProps> =
           </View>
         </View>
 
+        {/* Identity Row */}
         <View style={styles.identityRow}>
           <View style={styles.photoBox}>
-            {photoUrl ? <Image src={photoUrl} /> : null}
+            {photoUrl ? <Image src={photoUrl} style={{width: 80, height: 80}} /> : null}
           </View>
           <View style={styles.nameAndTitle}>
             <Text style={styles.name}>{name}</Text>
             <Text style={styles.roleTitle}>{role}</Text>
+            
+            <View style={styles.contactRow}>
+              {linkedin && (
+                <Link src={linkedin} style={[styles.contactItem, {color: '#2563EB', textDecoration: 'none'}]}>
+                  {linkedin.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, '')}
+                </Link>
+              )}
+              {linkedin && (email || phone) && <Text style={styles.contactItem}>   |   </Text>}
+              
+              <Text style={styles.contactItem}>{email}</Text>
+              
+              {phone && <Text style={styles.contactItem}>   |   {phone}</Text>}
+            </View>
           </View>
         </View>
 
-        <View style={styles.contactRow}>
-          <View style={styles.contactItem}><Text>{email || ''}</Text></View>
-          {phone && <><View style={styles.contactSeparator} /><View style={styles.contactItem}><Text>{phone}</Text></View></>}
-          {linkedin && <><View style={styles.contactSeparator} /><View style={styles.contactItem}><Text>{linkedin}</Text></View></>}
-        </View>
-
+        {/* Info Row */}
         <View style={styles.infoRow}>
           <View style={styles.infoColumn}>
-            <View style={styles.infoLabelRow}>
-                <Text style={styles.infoLabel}>COMPENSATION</Text>
-            </View>
-            <Text style={styles.infoValue}>{formattedCompensation || ''}</Text>
+            <Text style={styles.infoLabel}>COMPENSATION</Text>
+            <Text style={styles.infoValue}>{formattedCompensation || '-'}</Text>
           </View>
           <View style={styles.infoColumn}>
-            <View style={styles.infoLabelRow}>
-                <Text style={styles.infoLabel}>LANGUAGES</Text>
-            </View>
-            <Text style={styles.infoValue}>{(Array.isArray(languages) ? languages.join(', ') : languages) || ''}</Text>
+            <Text style={styles.infoLabel}>LANGUAGES</Text>
+            <Text style={styles.infoValue}>{(Array.isArray(languages) ? languages.join(', ') : languages) || '-'}</Text>
           </View>
           <View style={styles.infoColumn}>
-            <View style={styles.infoLabelRow}>
-                <Text style={styles.infoLabel}>EDUCATION</Text>
-            </View>
-            <Text style={styles.infoValue}>{(Array.isArray(academicBackground) ? academicBackground.join(', ') : academicBackground) || ''}</Text>
+            <Text style={styles.infoLabel}>EDUCATION</Text>
+            <Text style={styles.infoValue}>{(Array.isArray(academicBackground) ? academicBackground.join(', ') : academicBackground) || '-'}</Text>
           </View>
         </View>
       </View>
 
       <View style={styles.bodyGrid}>
+        {/* Left Column: Background & Projects */}
         <View style={styles.leftColumn}>
           <Text style={styles.sectionHeading}>PROFESSIONAL BACKGROUND</Text>
-          <View style={styles.sectionDivider} />
           <Text style={styles.paragraph}>{professionalBackground || ''}</Text>
 
+          <Text style={styles.sectionHeading}>MAIN PROJECTS</Text>
           <View style={styles.projectsList}>
-            <Text style={[styles.sectionHeading, { color: '#0F172A', fontWeight: 'bold' }]}>MAIN PROJECTS</Text>
-            <View style={styles.sectionDivider} />
             {projectsList.map((project, index) => (
-              <View key={index} style={styles.projectItem}>
+              <View key={index} style={styles.projectItem} wrap={false}>
                 <View style={styles.bullet} />
                 <Text style={styles.projectText}>{project}</Text>
               </View>
@@ -352,12 +366,12 @@ export const CandidateProfileDocument: React.FC<CandidateProfileDocumentProps> =
           </View>
         </View>
 
+        {/* Right Column: Skills */}
         <View style={styles.rightColumn}>
           <Text style={styles.sectionHeading}>HARD SKILLS</Text>
-          <View style={styles.sectionDivider} />
           <View style={styles.skillsContainer}>
             {skillsList.map((skill, index) => (
-              <View key={index} style={styles.chip}>
+              <View key={index} style={styles.chip} wrap={false}>
                 <Text style={styles.chipText}>{skill}</Text>
               </View>
             ))}
@@ -366,8 +380,8 @@ export const CandidateProfileDocument: React.FC<CandidateProfileDocumentProps> =
       </View>
 
       <View style={styles.footer} fixed>
-        <Text>KAPTAS GLOBAL</Text>
-        <Text>CONFIDENTIAL</Text>
+        <Text style={styles.footerText}>KAPTAS GLOBAL</Text>
+        <Text style={styles.footerText}>CONFIDENTIAL</Text>
       </View>
     </Page>
   </Document>

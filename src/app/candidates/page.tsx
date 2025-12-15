@@ -25,6 +25,7 @@ import { PageHeader } from "@/components/page-header";
 import { useAppStore } from "@/lib/store";
 import { exportCandidatePdf } from '@/lib/utils';
 import * as applicationsRepository from '@/lib/repositories/applications';
+import EditCandidateModal from "@/components/candidates/edit-candidate-modal";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -32,7 +33,10 @@ export default function CandidatesPage() {
   const router = useRouter();
   const [currentPage, setCurrentPage] = useState(1);
   const [applicationCounts, setApplicationCounts] = useState<Record<string, number>>({});
-  // Removed isLoadingCounts state as per instructions for flicker reduction
+  
+  // Edit Modal State
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [candidateIdToEdit, setCandidateIdToEdit] = useState<string | null>(null);
 
   const candidates = useAppStore((s) => s.candidates);
   const candidatesLoading = useAppStore((s) => s.candidatesLoading);
@@ -111,6 +115,16 @@ export default function CandidatesPage() {
 
   const handleExport = (candidateId: string) => {
     exportCandidatePdf(candidateId, router);
+  };
+
+  const handleEditCandidate = (candidateId: string) => {
+    setCandidateIdToEdit(candidateId);
+    setIsEditModalOpen(true);
+  };
+
+  const closeEditModal = () => {
+    setIsEditModalOpen(false);
+    setCandidateIdToEdit(null);
   };
 
   const goToNextPage = () => {
@@ -200,7 +214,7 @@ export default function CandidatesPage() {
                              <FileDown className="mr-2 h-4 w-4" />
                             Export as PDF
                           </DropdownMenuItem>
-                          <DropdownMenuItem>Edit Candidate</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleEditCandidate(candidate.id)}>Edit Candidate</DropdownMenuItem>
                           <DropdownMenuItem className="text-destructive">
                             Delete Candidate
                           </DropdownMenuItem>
@@ -235,6 +249,15 @@ export default function CandidatesPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Edit Modal */}
+      {isEditModalOpen && candidateIdToEdit && (
+        <EditCandidateModal
+          isOpen={isEditModalOpen}
+          onClose={closeEditModal}
+          candidateId={candidateIdToEdit}
+        />
+      )}
     </>
   );
 }

@@ -36,6 +36,7 @@ type AppState = {
   updatePositionInStore: (position: Position) => Promise<void>;
 
   loadCandidates: () => Promise<void>;
+  updateCandidateInStore: (candidateId: string, data: Partial<Candidate>) => Promise<void>;
   loadPositions: () => Promise<void>;
   loadApplicationsForPosition: (positionId: string) => Promise<void>;
   createCandidateAndApplyToPosition: (params: {
@@ -193,6 +194,15 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ candidatesLoading: true });
     const candidates = await candidatesRepository.getAllCandidates();
     set({ candidates, candidatesInitialized: true, candidatesLoading: false });
+  },
+
+  updateCandidateInStore: async (candidateId, data) => {
+    await candidatesRepository.updateCandidate(candidateId, data);
+    set((state) => ({
+      candidates: state.candidates.map((c) =>
+        c.id === candidateId ? { ...c, ...data } : c
+      ),
+    }));
   },
 
   loadPositions: async () => {
