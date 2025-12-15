@@ -6,7 +6,8 @@ import Link from "next/link";
 import { useAppStore } from '@/lib/store';
 import * as candidatesRepository from '@/lib/repositories/candidates';
 import * as applicationsRepository from '@/lib/repositories/applications';
-import { Candidate, Application, PipelineStageKey } from '@/lib/types';
+import * as positionsRepository from '@/lib/repositories/positions';
+import { Candidate, Application, PipelineStageKey, Position } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -43,13 +44,12 @@ const CandidateProfilePage: React.FC = () => {
     clientsInitialized,
     loadClients,
     positions,
-    positionsInitialized,
-    loadPositions
   } = useAppStore();
 
   const [candidate, setCandidate] = useState<Candidate | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
+  const [positionsMap, setPositionsMap] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const fetchCandidateAndApplications = async () => {
@@ -68,9 +68,23 @@ const CandidateProfilePage: React.FC = () => {
         const fetchedApplications = await applicationsRepository.getApplicationsByCandidateId(candidateId);
         setApplications(fetchedApplications);
 
-        if (!positionsInitialized) {
-            loadPositions();
-        }
+        const newPositionsMap: Record<string, string> = {};
+        const positionIds = [...new Set(fetchedApplications.map(app => app.positionId))];
+
+        const positionPromises = positionIds.map(async (id) => {
+            const existingPosition = positions.find(p => p.id === id);
+            if (existingPosition) {
+                newPositionsMap[id] = existingPosition.title;
+            } else {
+                const position = await positionsRepository.getPositionById(id);
+                if (position) {
+                    newPositionsMap[id] = position.title;
+                }
+            }
+        });
+
+        await Promise.all(positionPromises);
+        setPositionsMap(newPositionsMap);
 
       } else {
         console.error("Candidate not found");
@@ -79,7 +93,7 @@ const CandidateProfilePage: React.FC = () => {
     };
 
     fetchCandidateAndApplications();
-  }, [candidateId, candidates, loadCandidates, positionsInitialized, loadPositions]);
+  }, [candidateId, candidates, loadCandidates, positions]);
 
   useEffect(() => {
     if (!clientsInitialized) {
@@ -88,8 +102,7 @@ const CandidateProfilePage: React.FC = () => {
   }, [clientsInitialized, loadClients]);
 
   const getPositionTitle = (positionId: string) => {
-    const position = positions.find(p => p.id === positionId);
-    return position?.title || "Unknown Position";
+    return positionsMap[positionId] || "Unknown Position";
   };
 
   if (loading) {

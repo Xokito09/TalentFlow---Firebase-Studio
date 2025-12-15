@@ -6,19 +6,17 @@ import Link from "next/link";
 
 type ClientCardProps = {
   client: Client;
-  onClick: () => void;
   onEdit: (e: React.MouseEvent) => void;
 };
 
-export const ClientCard: React.FC<ClientCardProps> = ({ client, onClick, onEdit }) => {
-  // Default relationshipStatus to 'client' if it's missing or not recognized
-  const effectiveRelationshipStatus = client.relationshipStatus || 'client';
+export const ClientCard: React.FC<ClientCardProps> = ({ client, onEdit }) => {
+  const effectiveRelationshipStatus = client.relationshipStatus || 'prospect';
   const statusConfig =
-    CLIENT_STATUS_CONFIG[effectiveRelationshipStatus] ||
-    CLIENT_STATUS_CONFIG.client; // Default to client if the effective status is not in config
+    CLIENT_STATUS_CONFIG[effectiveRelationshipStatus as keyof typeof CLIENT_STATUS_CONFIG] ||
+    CLIENT_STATUS_CONFIG.prospect;
 
   return (
-    <Link 
+    <Link
         href={`/clients/${client.id}`}
         className="bg-white border border-slate-200 rounded-xl p-4 flex items-center gap-4 hover:border-purple-500 hover:shadow-md transition-all cursor-pointer"
     >
@@ -33,15 +31,22 @@ export const ClientCard: React.FC<ClientCardProps> = ({ client, onClick, onEdit 
             <div className="flex justify-between items-start">
                 <div>
                     <h3 className="font-bold text-slate-800 text-lg">{client.name}</h3>
-                    <p className="text-sm text-slate-500">{client.industry}</p>
+                    {client.relationshipStatus !== 'prospect' && client.industry ? (
+                        <p className="text-sm text-slate-500">{client.industry}</p>
+                    ) : (
+                        <p className="text-sm text-slate-500">{client.contactEmail}</p>
+                    )}
                 </div>
                 <div className="flex items-center gap-4">
                      <div className={`px-2.5 py-0.5 rounded-full text-xs font-bold flex items-center gap-1.5 ${statusConfig.className}`}>
                         <span className={`w-2 h-2 rounded-full ${statusConfig.dotClassName}`}></span>
                         {statusConfig.label}
                     </div>
-                    <button 
-                        onClick={onEdit}
+                    <button
+                        onClick={(e) => {
+                            e.preventDefault();
+                            onEdit(e);
+                        }}
                         className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md"
                     >
                         <MoreHorizontal className="w-5 h-5" />

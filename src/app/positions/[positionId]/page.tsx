@@ -1,6 +1,6 @@
 "use client";
-import React, { useEffect, useState } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import React, { useEffect, useState, useRef } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import Link from "next/link";
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
@@ -80,7 +80,10 @@ const PositionDetailPage: React.FC = () => {
   const [isFunnelSettingsModalOpen, setIsFunnelSettingsModalOpen] = useState(false);
   const [currentPosition, setCurrentPosition] = useState<PositionType | null>(null);
   const [loadingPosition, setLoadingPosition] = useState(true);
+
+  const candidatesCache = useRef<Map<string, Candidate>>(new Map());
   const [candidates, setCandidates] = useState<Map<string, Candidate>>(new Map());
+  
   const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
@@ -122,32 +125,52 @@ const PositionDetailPage: React.FC = () => {
   }, [currentPosition, positionId, loadApplicationsForPosition]);
 
   useEffect(() => {
-    const fetchCandidates = async () => {
+    const fetchMissingCandidates = async () => {
       const apps = applicationsByPosition[positionId];
       if (!apps) return;
 
-      const candidateIds = apps.map(app => app.candidateId).filter(id => id && !candidates.has(id));
-      if (candidateIds.length === 0) return;
+      const candidateIdsToFetch = apps
+        .map(app => ({ id: app.candidateId, snapshot: app.candidateSnapshot }))
+        .filter(({ id, snapshot }) => {
+          if (!id || candidatesCache.current.has(id)) {
+            return false;
+          }
+          return !snapshot?.fullName;
+        })
+        .map(({ id }) => id);
 
-      const uniqueCandidateIds = [...new Set(candidateIds)];
-      const fetchedCandidates = await Promise.all(uniqueCandidateIds.map(id => candidateRepository.getCandidateById(id)));
+      if (candidateIdsToFetch.length === 0) return;
 
-      setCandidates(prev => {
-        const newCandidates = new Map(prev);
-        fetchedCandidates.forEach(c => {
-          if (c) newCandidates.set(c.id, c);
+      const uniqueIdsToFetch = [...new Set(candidateIdsToFetch)];
+      
+      try {
+        const fetchedCandidates = await Promise.all(
+          uniqueIdsToFetch.map(id => candidateRepository.getCandidateById(id))
+        );
+
+        let cacheUpdated = false;
+        fetchedCandidates.forEach(candidate => {
+          if (candidate && !candidatesCache.current.has(candidate.id)) {
+            candidatesCache.current.set(candidate.id, candidate);
+            cacheUpdated = true;
+          }
         });
-        return newCandidates;
-      });
+
+        if (cacheUpdated) {
+          setCandidates(new Map(candidatesCache.current));
+        }
+      } catch (error) {
+        console.error("Failed to fetch missing candidates:", error);
+      }
     };
 
-    fetchCandidates();
-  }, [applicationsByPosition, positionId, candidates]);
+    fetchMissingCandidates();
+  }, [applicationsByPosition, positionId]);
 
   const handleExportPdf = async () => {
     setIsExporting(true);
     try {
-      await exportPositionReportPdfByPositionId(positionId);
+      await exportPositionReportPdfByPositionId(positionId, candidatesCache.current);
       toast({
         title: "Success",
         description: "Position report downloaded successfully.",

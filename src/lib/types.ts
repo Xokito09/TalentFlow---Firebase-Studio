@@ -33,22 +33,23 @@ export type Candidate = {
 export type Client = {
   id: string;
   name: string;
-  industry: string;
-  location: string;
-  website?: string;
   pointOfContact: string;
   contactEmail: string;
-  logoUrl: string;
-  relationshipStatus: 'client' | 'prospect' | 'churn' | 'lost';
-  ownerId?: string; // Added ownerId
-  createdAt?: Timestamp; // Added createdAt
-  updatedAt?: Timestamp; // Added updatedAt
-  // CRM Fields
+  relationshipStatus: 'prospect' | 'active' | 'churn' | 'lost';
+  updatedAt?: Timestamp;
+  notes?: string;
+
+  // Optional fields
+  industry?: string;
+  location?: string;
+  website?: string;
+  logoUrl?: string;
+  ownerId?: string;
+  createdAt?: Timestamp;
   taxId?: string;
   billingAddress?: string;
   billingEmail?: string;
   paymentTerms?: string;
-  notes?: string;
 };
 
 export type FunnelMetrics = {
