@@ -9,7 +9,7 @@ import * as candidatesRepository from '@/lib/repositories/candidates';
 import * as positionsRepository from '@/lib/repositories/positions';
 import CandidateReportPage from '@/components/applications/candidate-report-page';
 import { Button } from "@/components/ui/button";
-import { FileDown } from "lucide-react";
+import { FileDown, Loader2 } from "lucide-react";
 
 const ApplicationCvPage: React.FC = () => {
   const params = useParams();
@@ -21,12 +21,12 @@ const ApplicationCvPage: React.FC = () => {
   const [candidate, setCandidate] = useState<Candidate | null>(null);
   const [position, setPosition] = useState<Position | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const from = searchParams.get("from");
   const fromPositionId = searchParams.get("positionId");
   const fromCandidateId = searchParams.get("candidateId");
-  const shouldPrint = searchParams.get("print") === "true";
 
   useEffect(() => {
     const fetchData = async () => {
@@ -54,12 +54,6 @@ const ApplicationCvPage: React.FC = () => {
     fetchData();
   }, [applicationId]);
 
-  useEffect(() => {
-    if (shouldPrint && !loading && !error) {
-      setTimeout(() => window.print(), 500); // Delay to allow rendering
-    }
-  }, [shouldPrint, loading, error]);
-
   const handleBack = () => {
     if (from === "position" && fromPositionId) {
       router.push(`/positions/${fromPositionId}`);
@@ -70,8 +64,16 @@ const ApplicationCvPage: React.FC = () => {
     }
   };
 
-  const handleDownloadPdf = () => {
-    window.print();
+  const handleDownloadPdf = async () => {
+    setIsDownloading(true);
+    try {
+      const { exportCandidateProfilePdfByApplicationId } = await import('@/lib/pdf/export-candidate-profile-pdf');
+      await exportCandidateProfilePdfByApplicationId(applicationId);
+    } catch (error) {
+      console.error("Failed to download PDF:", error);
+      alert("Failed to download PDF. Please check the console for details.");
+    }
+    setIsDownloading(false);
   };
 
   const backButtonLabel = useMemo(() => {
@@ -111,14 +113,19 @@ const ApplicationCvPage: React.FC = () => {
     phone: candidate.phone,
     onBack: handleBack,
     backButtonLabel: backButtonLabel,
+    candidateId: candidate.id,
   };
 
   return (
     <div>
       <div className="max-w-4xl mx-auto p-4 sm:p-8 print:hidden">
-        <Button onClick={handleDownloadPdf}>
-          <FileDown className="mr-2 h-4 w-4" />
-          Download PDF
+        <Button onClick={handleDownloadPdf} disabled={isDownloading}>
+          {isDownloading ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <FileDown className="mr-2 h-4 w-4" />
+          )}
+          {isDownloading ? "Generating..." : "Download PDF"}
         </Button>
       </div>
       <CandidateReportPage {...candidateReportProps} />

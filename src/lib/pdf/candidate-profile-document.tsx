@@ -1,5 +1,5 @@
 import React from 'react';
-import { Document, Page, View, Text, Image, StyleSheet, Font } from '@react-pdf/renderer';
+import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer';
 
 // Define Props interface based on CandidateReportPageProps
 interface CandidateProfileDocumentProps {
@@ -72,14 +72,14 @@ const styles = StyleSheet.create({
   },
   projectLabel: {
     fontSize: 11,
-    fontWeight: 'semibold',
+    fontWeight: 'bold',
     textTransform: 'uppercase',
     letterSpacing: '0.18em',
     color: '#94A3B8',
   },
   projectValue: {
     fontSize: 12,
-    fontWeight: 'extrabold',
+    fontWeight: 'bold',
     textTransform: 'uppercase',
     letterSpacing: '0.08em',
     color: '#16A34A',
@@ -103,14 +103,14 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 52,
     lineHeight: 1,
-    fontWeight: 'black',
+    fontWeight: 'bold',
     color: '#0F172A',
   },
   roleTitle: {
     marginTop: 8,
     fontSize: 22,
     lineHeight: 1.2,
-    fontWeight: 'extrabold',
+    fontWeight: 'bold',
     textTransform: 'uppercase',
     letterSpacing: '0.04em',
     color: '#16A34A',
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
   infoValue: {
     fontSize: 18,
     lineHeight: 1.2,
-    fontWeight: 'extrabold',
+    fontWeight: 'bold',
     color: '#0F172A',
     marginTop: 10,
   },
@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
   },
   sectionHeading: {
     fontSize: 12,
-    fontWeight: 'extrabold',
+    fontWeight: 'bold',
     textTransform: 'uppercase',
     letterSpacing: '0.18em',
     color: '#94A3B8',
@@ -195,13 +195,13 @@ const styles = StyleSheet.create({
   paragraph: {
     fontSize: 16,
     lineHeight: 1.875,
-    fontWeight: 'medium',
+    fontWeight: 'normal',
     color: '#475569',
   },
   skillsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    // Removed gap property
   },
   chip: {
     backgroundColor: '#F8FAFC',
@@ -209,10 +209,12 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 14,
+    marginRight: 12,
+    marginBottom: 12,
   },
   chipText: {
     fontSize: 12,
-    fontWeight: 'extrabold',
+    fontWeight: 'bold',
     textTransform: 'uppercase',
     letterSpacing: '0.12em',
     color: '#475569',
@@ -236,7 +238,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     lineHeight: 1.6,
-    fontWeight: 'medium',
+    fontWeight: 'normal',
     color: '#475569',
   },
   footer: {
@@ -305,7 +307,7 @@ export const CandidateProfileDocument: React.FC<CandidateProfileDocumentProps> =
         </View>
 
         <View style={styles.contactRow}>
-          <View style={styles.contactItem}><Text>{email}</Text></View>
+          <View style={styles.contactItem}><Text>{email || ''}</Text></View>
           {phone && <><View style={styles.contactSeparator} /><View style={styles.contactItem}><Text>{phone}</Text></View></>}
           {linkedin && <><View style={styles.contactSeparator} /><View style={styles.contactItem}><Text>{linkedin}</Text></View></>}
         </View>
@@ -315,19 +317,19 @@ export const CandidateProfileDocument: React.FC<CandidateProfileDocumentProps> =
             <View style={styles.infoLabelRow}>
                 <Text style={styles.infoLabel}>COMPENSATION</Text>
             </View>
-            <Text style={styles.infoValue}>{formattedCompensation}</Text>
+            <Text style={styles.infoValue}>{formattedCompensation || ''}</Text>
           </View>
           <View style={styles.infoColumn}>
             <View style={styles.infoLabelRow}>
                 <Text style={styles.infoLabel}>LANGUAGES</Text>
             </View>
-            <Text style={styles.infoValue}>{Array.isArray(languages) ? languages.join(', ') : languages}</Text>
+            <Text style={styles.infoValue}>{(Array.isArray(languages) ? languages.join(', ') : languages) || ''}</Text>
           </View>
           <View style={styles.infoColumn}>
             <View style={styles.infoLabelRow}>
                 <Text style={styles.infoLabel}>EDUCATION</Text>
             </View>
-            <Text style={styles.infoValue}>{Array.isArray(academicBackground) ? academicBackground.join(', ') : academicBackground}</Text>
+            <Text style={styles.infoValue}>{(Array.isArray(academicBackground) ? academicBackground.join(', ') : academicBackground) || ''}</Text>
           </View>
         </View>
       </View>
@@ -336,10 +338,10 @@ export const CandidateProfileDocument: React.FC<CandidateProfileDocumentProps> =
         <View style={styles.leftColumn}>
           <Text style={styles.sectionHeading}>PROFESSIONAL BACKGROUND</Text>
           <View style={styles.sectionDivider} />
-          <Text style={styles.paragraph}>{professionalBackground}</Text>
+          <Text style={styles.paragraph}>{professionalBackground || ''}</Text>
 
           <View style={styles.projectsList}>
-            <Text style={[styles.sectionHeading, { color: '#0F172A', fontWeight: 'black' }]}>MAIN PROJECTS</Text>
+            <Text style={[styles.sectionHeading, { color: '#0F172A', fontWeight: 'bold' }]}>MAIN PROJECTS</Text>
             <View style={styles.sectionDivider} />
             {projectsList.map((project, index) => (
               <View key={index} style={styles.projectItem}>
