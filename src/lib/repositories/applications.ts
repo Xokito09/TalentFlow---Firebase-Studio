@@ -1,4 +1,4 @@
-import { doc, collection, query, where, getDocs, addDoc, updateDoc, serverTimestamp, Timestamp, getDoc, limit } from "firebase/firestore";
+import { doc, collection, query, where, getDocs, addDoc, updateDoc, serverTimestamp, Timestamp, getDoc, limit, orderBy } from "firebase/firestore";
 import { db } from "../firebase";
 import { Application } from "../types";
 
@@ -61,6 +61,20 @@ export async function getApplicationsByCandidateId(candidateId: string): Promise
   const q = query(applicationsCollection, where("candidateId", "==", candidateId));
   const querySnapshot = await getDocs(q);
   return querySnapshot.docs.map(applicationFromDoc);
+}
+
+export async function getLatestApplicationByCandidateId(candidateId: string): Promise<Application | null> {
+    const q = query(
+        applicationsCollection,
+        where("candidateId", "==", candidateId),
+        orderBy("appliedDate", "desc"),
+        limit(1)
+    );
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
+        return applicationFromDoc(querySnapshot.docs[0]);
+    }
+    return null;
 }
 
 export async function getApplicationsByCandidateIds(candidateIds: string[]): Promise<Application[]> {

@@ -15,12 +15,12 @@ const stripUndefined = (obj: any): any => {
   return newObj;
 };
 
-const normalizePositionStatus = (status: string | undefined): 'Open' | 'Closed' | 'On Hold' => {
+const normalizePositionStatus = (status: string | undefined): 'open' | 'closed' | 'onhold' => {
   const lowerStatus = (status || "").toLowerCase();
-  if (lowerStatus === "open") return 'Open';
-  if (lowerStatus === "closed") return 'Closed';
-  if (lowerStatus === "on hold" || lowerStatus === "on_hold") return 'On Hold';
-  return 'Open'; // Default to Open if unrecognized
+  if (lowerStatus === "open") return 'open';
+  if (lowerStatus === "closed") return 'closed';
+  if (lowerStatus === "on hold" || lowerStatus === "on_hold") return 'onhold';
+  return 'open'; // Default to open if unrecognized
 };
 
 const mapFirestoreDocToPosition = (d: any): Position => {

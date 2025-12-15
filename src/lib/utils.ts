@@ -1,15 +1,29 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { Timestamp } from "firebase/firestore";
+import * as applicationsRepository from '@/lib/repositories/applications';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function exportCandidatePdf(candidateId: string) {
-  console.log(`Exporting PDF for candidate: ${candidateId}`);
-  // Placeholder for actual PDF export logic
-  alert(`Exporting PDF for candidate: ${candidateId}`);
+export async function exportCandidatePdf(candidateId: string) {
+  console.log(`Requesting PDF export for candidate: ${candidateId}`);
+  
+  try {
+    const latestApplication = await applicationsRepository.getLatestApplicationByCandidateId(candidateId);
+    
+    if (latestApplication) {
+      // Dynamically import the PDF exporter to keep the main bundle small
+      const { exportCandidateProfilePdfByApplicationId } = await import("@/lib/pdf/export-candidate-profile-pdf");
+      await exportCandidateProfilePdfByApplicationId(latestApplication.id);
+    } else {
+      alert("This candidate has no applications to export.");
+    }
+  } catch (error) {
+    console.error("Failed to export PDF:", error);
+    alert("Failed to export PDF. Please check the console for more details.");
+  }
 }
 
 /**

@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
+import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -10,23 +10,31 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+let app;
+if (!getApps().length) {
+  app = initializeApp(firebaseConfig);
+} else {
+  app = getApp();
+}
 
-const db = getFirestore(app);
+let db;
 
-// Enable offline persistence
-try {
-  enableIndexedDbPersistence(db).catch((err) => {
-    if (err.code === 'failed-precondition') {
-      console.warn("Firestore persistence failed: probably multiple tabs open, persistence already enabled.");
-    } else if (err.code === 'unimplemented') {
-      console.warn("Firestore persistence not available on this browser.");
-    } else {
-      console.error("Firestore persistence failed for unknown reason:", err);
-    }
-  });
-} catch (e) {
-  console.error("Error enabling Firestore persistence:", e);
+// Check if we are in a browser environment
+if (typeof window !== 'undefined') {
+  try {
+    db = initializeFirestore(app, {
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager(),
+      }),
+    });
+  } catch (e) {
+    // This can happen if Firestore is already initialized in another tab.
+    // In that case, we can just get the existing instance.
+    db = getFirestore(app);
+  }
+} else {
+  // We are on the server. Get a simple Firestore instance.
+  db = getFirestore(app);
 }
 
 export { db };

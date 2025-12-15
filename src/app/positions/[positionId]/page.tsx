@@ -2,7 +2,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from "next/link";
-import dynamic from "next/dynamic";
 import { useAppStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,16 +12,12 @@ import { Application, PipelineStageKey, Position as PositionType, Candidate } fr
 import * as positionsRepository from '@/lib/repositories/positions';
 import * as candidateRepository from '@/lib/repositories/candidates';
 import { formatFirestoreDate } from '@/lib/utils';
-
-const AddCandidateModal = dynamic(() => import('@/components/positions/add-candidate-modal'), {
-  loading: () => <p>Loading...</p>,
-  ssr: false
-});
+import AddCandidateModal from '@/components/positions/add-candidate-modal';
 
 const POSITION_STATUS_CONFIG: { [key: string]: { label: string; className: string; dotClassName: string } } = {
-  open: { label: "OPEN", className: "bg-green-100 text-green-700", dotClassName: "bg-green-500" },
-  onhold: { label: "ON HOLD", className: "bg-blue-100 text-blue-700", dotClassName: "bg-blue-500" },
-  closed: { label: "CLOSED", className: "bg-gray-100 text-gray-700", dotClassName: "bg-gray-500" },
+  "open": { label: "OPEN", className: "bg-green-100 text-green-700", dotClassName: "bg-green-500" },
+  "onhold": { label: "ON HOLD", className: "bg-blue-100 text-blue-700", dotClassName: "bg-blue-500" },
+  "closed": { label: "CLOSED", className: "bg-gray-100 text-gray-700", dotClassName: "bg-gray-500" },
 };
 
 interface CandidateCardProps {
@@ -164,10 +159,10 @@ const PositionDetailPage: React.FC = () => {
   }
 
   const client = clients.find(c => c.id === currentPosition.clientId);
-  const statusConfig = POSITION_STATUS_CONFIG[currentPosition.status.toLowerCase()] || POSITION_STATUS_CONFIG.open;
+  const statusConfig = POSITION_STATUS_CONFIG[currentPosition.status] || POSITION_STATUS_CONFIG["open"];
 
-  const handleUpdatePositionStatus = (newStatus: string) => {
-    updatePositionInStore({ ...currentPosition, status: newStatus as PositionType['status'] });
+  const handleUpdatePositionStatus = (newStatus: PositionType['status']) => {
+    updatePositionInStore({ ...currentPosition, status: newStatus });
   };
 
   const mapLegacyStatusToStageKey = (status: string): PipelineStageKey | undefined => {
@@ -245,7 +240,7 @@ const PositionDetailPage: React.FC = () => {
               {Object.keys(POSITION_STATUS_CONFIG).map((statusKey) => {
                 const config = POSITION_STATUS_CONFIG[statusKey];
                 return (
-                  <DropdownMenuItem key={statusKey} onClick={() => handleUpdatePositionStatus(statusKey)}>
+                  <DropdownMenuItem key={statusKey} onClick={() => handleUpdatePositionStatus(statusKey as PositionType['status'])}>
                     <span className={`w-2 h-2 rounded-full ${config.dotClassName} mr-2`}></span>
                     {config.label}
                   </DropdownMenuItem>

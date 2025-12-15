@@ -110,7 +110,7 @@ export default function CandidatesPage() {
   }, [pageCandidateIdsKey]); // Depend on stable key
 
   const handleExport = (candidateId: string) => {
-    exportCandidatePdf(candidateId);
+    exportCandidatePdf(candidateId, router);
   };
 
   const goToNextPage = () => {

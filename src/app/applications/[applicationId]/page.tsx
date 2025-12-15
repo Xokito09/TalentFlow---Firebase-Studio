@@ -8,6 +8,8 @@ import * as applicationsRepository from '@/lib/repositories/applications';
 import * as candidatesRepository from '@/lib/repositories/candidates';
 import * as positionsRepository from '@/lib/repositories/positions';
 import CandidateReportPage from '@/components/applications/candidate-report-page';
+import { Button } from "@/components/ui/button";
+import { FileDown } from "lucide-react";
 
 const ApplicationCvPage: React.FC = () => {
   const params = useParams();
@@ -24,6 +26,7 @@ const ApplicationCvPage: React.FC = () => {
   const from = searchParams.get("from");
   const fromPositionId = searchParams.get("positionId");
   const fromCandidateId = searchParams.get("candidateId");
+  const shouldPrint = searchParams.get("print") === "true";
 
   useEffect(() => {
     const fetchData = async () => {
@@ -51,6 +54,12 @@ const ApplicationCvPage: React.FC = () => {
     fetchData();
   }, [applicationId]);
 
+  useEffect(() => {
+    if (shouldPrint && !loading && !error) {
+      setTimeout(() => window.print(), 500); // Delay to allow rendering
+    }
+  }, [shouldPrint, loading, error]);
+
   const handleBack = () => {
     if (from === "position" && fromPositionId) {
       router.push(`/positions/${fromPositionId}`);
@@ -59,6 +68,10 @@ const ApplicationCvPage: React.FC = () => {
     } else {
       router.back();
     }
+  };
+
+  const handleDownloadPdf = () => {
+    window.print();
   };
 
   const backButtonLabel = useMemo(() => {
@@ -100,7 +113,17 @@ const ApplicationCvPage: React.FC = () => {
     backButtonLabel: backButtonLabel,
   };
 
-  return <CandidateReportPage {...candidateReportProps} />;
+  return (
+    <div>
+      <div className="max-w-4xl mx-auto p-4 sm:p-8 print:hidden">
+        <Button onClick={handleDownloadPdf}>
+          <FileDown className="mr-2 h-4 w-4" />
+          Download PDF
+        </Button>
+      </div>
+      <CandidateReportPage {...candidateReportProps} />
+    </div>
+  );
 };
 
 export default ApplicationCvPage;

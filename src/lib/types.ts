@@ -40,6 +40,9 @@ export type Client = {
   contactEmail: string;
   logoUrl: string;
   relationshipStatus: 'client' | 'prospect' | 'churn' | 'lost';
+  ownerId?: string; // Added ownerId
+  createdAt?: Timestamp; // Added createdAt
+  updatedAt?: Timestamp; // Added updatedAt
   // CRM Fields
   taxId?: string;
   billingAddress?: string;
@@ -55,6 +58,8 @@ export type Position = {
   description: string;
   requirements: string[];
   status: 'Open' | 'Closed' | 'On Hold';
+  createdAt?: Timestamp; // Added createdAt
+  updatedAt?: Timestamp; // Added updatedAt
   location?: string;
   department?: string;
 };

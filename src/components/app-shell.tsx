@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useEffect } from "react";
 import Link from "next/link";
 import {
   SidebarProvider,
@@ -27,10 +28,31 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAppStore } from '@/lib/store'; // Import useAppStore
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  // Removed isMounted state and conditional return null to fix hydration mismatch and "blank screen" issue.
-  // The AppShellProvider handles dynamic import with ssr: false, so this component only runs on client.
+  const { clientsInitialized, loadClients, positionsInitialized, loadPositions, candidatesInitialized, loadCandidates } = useAppStore();
+
+  useEffect(() => {
+    if (!clientsInitialized) {
+      loadClients();
+    }
+
+    const prefetchOtherData = () => {
+      if (!positionsInitialized) {
+        loadPositions();
+      }
+      if (!candidatesInitialized) {
+        loadCandidates();
+      }
+    };
+
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      (window as any).requestIdleCallback(prefetchOtherData, { timeout: 2000 });
+    } else {
+      setTimeout(prefetchOtherData, 500);
+    }
+  }, [clientsInitialized, loadClients, positionsInitialized, loadPositions, candidatesInitialized, loadCandidates]);
 
   return (
     <SidebarProvider>

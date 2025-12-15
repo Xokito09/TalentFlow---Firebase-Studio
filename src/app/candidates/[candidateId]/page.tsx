@@ -5,7 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from "next/link";
 import { useAppStore } from '@/lib/store';
 import * as candidatesRepository from '@/lib/repositories/candidates';
-import *s applicationsRepository from '@/lib/repositories/applications';
+import * as applicationsRepository from '@/lib/repositories/applications';
+import * as positionsRepository from '@/lib/repositories/positions'; // Added import
 import { Candidate, Application, PipelineStageKey } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -42,14 +43,12 @@ const CandidateProfilePage: React.FC = () => {
     clients,
     clientsInitialized,
     loadClients,
-    positions,
-    positionsInitialized,
-    loadPositions,
   } = useAppStore();
 
   const [candidate, setCandidate] = useState<Candidate | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
+  const [positionsById, setPositionsById] = useState<Record<string, { title: string }>>({}); // Added local state for positions
 
   useEffect(() => {
     const fetchCandidateAndApplications = async () => {
@@ -67,6 +66,18 @@ const CandidateProfilePage: React.FC = () => {
         setCandidate(fetchedCandidate);
         const fetchedApplications = await applicationsRepository.getApplicationsByCandidateId(candidateId);
         setApplications(fetchedApplications);
+
+        // Fetch only referenced positions
+        const uniquePositionIds = Array.from(new Set(fetchedApplications.map(app => app.positionId)));
+        const fetchedPositions: Record<string, { title: string }> = {};
+        for (const positionId of uniquePositionIds) {
+          const position = await positionsRepository.getPositionById(positionId);
+          if (position) {
+            fetchedPositions[positionId] = { title: position.title };
+          }
+        }
+        setPositionsById(fetchedPositions);
+
       } else {
         console.error("Candidate not found");
       }
@@ -82,17 +93,9 @@ const CandidateProfilePage: React.FC = () => {
     }
   }, [clientsInitialized, loadClients]);
 
-  // New useEffect to load all positions once
-  useEffect(() => {
-    if (!positionsInitialized) {
-      loadPositions();
-    }
-  }, [positionsInitialized, loadPositions]);
-
   const getPositionTitle = (positionId: string) => {
-    // Use the global positions list instead of positionsByClient
-    const position = positions.find(p => p.id === positionId);
-    return position?.title || "Unknown Position";
+    // Use local positionsById state
+    return positionsById[positionId]?.title || "Unknown Position";
   };
 
   if (loading) {
@@ -166,7 +169,12 @@ const CandidateProfilePage: React.FC = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             {candidate.professionalBackground && <div className="text-slate-700"><h3 className="font-semibold mb-1 flex items-center gap-2"><BookOpen className="h-5 w-5 text-slate-500" />Professional Background</h3><p>{candidate.professionalBackground}</p></div>}
-            {candidate.mainProjects && <div className="text-slate-700"><h3 className="font-semibold mb-1 flex items-center gap-2"><Clipboard className="h-5 w-5 text-slate-500" />Main Projects</h3><p>{candidate.mainProjects.join(', ')}</p></div>}
+            {candidate.mainProjects && (
+              <div className="text-slate-700">
+                <h3 className="font-semibold mb-1 flex items-center gap-2"><Clipboard className="h-5 w-5 text-slate-500" />Main Projects</h3>
+                <p>{candidate.mainProjects.join(', ')}</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

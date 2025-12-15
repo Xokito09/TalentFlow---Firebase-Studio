@@ -39,14 +39,21 @@ export async function getAllClients(): Promise<Client[]> {
 }
 
 export async function saveClient(client: Omit<Client, 'id'> & { id?: string }): Promise<Client> {
+  const currentUserId = "test-user-id"; // Placeholder for current user ID
   const cleanClient = removeUndefined(client);
+
   if (client.id) {
     await setDoc(doc(db, 'clients', client.id), cleanClient, { merge: true });
     return cleanClient as Client;
   } else {
     const newDocRef = doc(collection(db, 'clients'));
-    await setDoc(newDocRef, cleanClient);
-    return { ...cleanClient, id: newDocRef.id } as Client;
+    const clientWithOwnership = {
+      ...cleanClient,
+      ownerId: currentUserId,
+      id: newDocRef.id,
+    };
+    await setDoc(newDocRef, clientWithOwnership);
+    return clientWithOwnership as Client;
   }
 }
 
