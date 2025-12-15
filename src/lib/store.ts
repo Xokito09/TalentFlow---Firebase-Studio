@@ -79,8 +79,9 @@ export const useAppStore = create<AppState>((set, get) => ({
         ...client,
         relationshipStatus: client.relationshipStatus || 'client',
     };
-    await clientsRepository.saveClient(newClient);
-    set((state) => ({ clients: [...state.clients, newClient] }));
+    // Use the return value which includes the Firestore-generated ID
+    const savedClient = await clientsRepository.saveClient(newClient);
+    set((state) => ({ clients: [...state.clients, savedClient] }));
   },
   updateClient: async (updatedClient) => {
     set((state) => ({

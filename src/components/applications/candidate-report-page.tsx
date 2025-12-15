@@ -155,83 +155,79 @@ const CandidateReportPage: React.FC<CandidateReportPageProps> = ({
 
         {/* Header Card */}
         <div className="bg-[#FFFFFF] rounded-[20px] shadow-[0_1px_2px_rgba(0,0,0,0.05)] border border-[#E6E8EF] p-7 report-container">
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center mb-5 border-b border-[#EEF2F7] pb-3.5">
             <div className="flex items-center gap-4">
-              <div className="w-9 h-9 bg-[#0F172A] rounded-[10px] flex items-center justify-center">
+              <div className="w-9 h-9 bg-[#0F172A] rounded-[10px] flex items-center justify-center text-white">
                 <Logo />
               </div>
-              <span className="text-sm font-bold tracking-[0.18em] text-[#0F172A] uppercase">KAPTAS GLOBAL</span>
+              <span className="text-[10px] font-bold tracking-[0.2em] text-[#0F172A] uppercase">KAPTAS GLOBAL</span>
             </div>
-            <div className="text-right">
-              <span className="text-[11px] font-semibold tracking-[0.18em] text-[#94A3B8] uppercase mr-2">PROJECT ROLE:</span>
-              <span className="text-xs font-extrabold tracking-[0.08em] text-[#16A34A] uppercase">{projectRole}</span>
+            <div className="text-right flex items-baseline">
+              <span className="text-[11px] font-semibold tracking-[0.1em] text-[#94A3B8] uppercase mr-2">PROJECT ROLE:</span>
+              <span className="text-xs font-extrabold tracking-[0.05em] text-[#16A34A] uppercase">{projectRole}</span>
             </div>
           </div>
 
-          <div className="mt-[18px] mb-[22px] h-[1px] bg-[#EEF2F7]"></div>
-
-          <div className="flex items-start gap-8">
-            <div className="w-[110px] h-[110px] bg-[#F1F5F9] rounded-[16px] flex-shrink-0 border border-[#E6E8EF]">
-              {photoUrl && <Image src={photoUrl} alt={name} width={110} height={110} className="rounded-[16px] object-cover" />}
+          <div className="flex items-center gap-6 mb-5">
+            <div className="w-[80px] h-[80px] bg-[#F1F5F9] rounded-[12px] flex-shrink-0 border border-[#E6E8EF] overflow-hidden">
+              {photoUrl && <Image src={photoUrl} alt={name} width={80} height={80} className="object-cover w-full h-full" />}
             </div>
             <div className="flex-grow">
-              <h1 className="text-[52px] leading-[52px] font-black text-[#0F172A]">{name}</h1>
-              <p className="mt-2 text-[22px] leading-[26px] font-extrabold text-[#16A34A] uppercase tracking-[0.04em]">{role}</p>
+              <h1 className="text-[28px] leading-[1.2] font-bold text-[#0F172A] uppercase tracking-[-0.02em]">{name}</h1>
+              <p className="mt-1 text-[12px] font-bold text-[#16A34A] uppercase tracking-[0.08em]">{role}</p>
 
-              <div className="mt-4 flex flex-wrap items-center text-sm text-[#475569]">
-                <div className="flex items-center gap-2">
-                  <Mail className="w-[18px] h-[18px] text-[#94A3B8]" />
-                  <span>{email}</span>
-                </div>
-                {phone && (
-                  <>
-                    <div className="w-[1px] h-3.5 bg-[#EEF2F7] mx-4"></div>
-                    <div className="flex items-center gap-2">
-                      <Phone className="w-[18px] h-[18px] text-[#94A3B8]" />
-                      <span>{phone}</span>
-                    </div>
-                  </>
-                )}
+              <div className="mt-2.5 flex flex-wrap items-center text-[10px] text-[#64748B]">
                 {linkedin && (
                   <>
-                    <div className="w-[1px] h-3.5 bg-[#EEF2F7] mx-4"></div>
-                    <div className="flex items-center gap-2">
-                      <LinkIcon className="w-[18px] h-[18px] text-[#94A3B8]" />
+                     <div className="flex items-center gap-1.5 mr-3">
                       <a href={linkedin} target="_blank" rel="noopener noreferrer" className="text-[#2563EB] hover:underline">
                         {linkedin.replace(/^(https?:\/\/)?(www\.)?linkedin\.com\/in\//, '')}
                       </a>
                     </div>
+                    {(email || phone) && <span className="mr-3 text-[#CBD5E1]">|</span>}
+                  </>
+                )}
+               
+                <div className="flex items-center gap-1.5 mr-3">
+                  <span>{email}</span>
+                </div>
+                {phone && (
+                  <>
+                    <span className="mr-3 text-[#CBD5E1]">|</span>
+                    <div className="flex items-center gap-1.5">
+                      <span>{phone}</span>
+                    </div>
                   </>
                 )}
               </div>
             </div>
           </div>
 
-          <div className="mt-[18px] mb-[22px] h-[1px] bg-[#EEF2F7]"></div>
-
-          <div className="grid grid-cols-3 gap-8">
-            <InfoColumn icon={DollarSign} label="COMPENSATION" value={formattedCompensation} />
-            <InfoColumn icon={LanguagesIcon} label="LANGUAGES" value={Array.isArray(languages) ? languages.join(', ') : languages} />
-            <InfoColumn icon={GraduationCap} label="EDUCATION" value={Array.isArray(academicBackground) ? academicBackground.join(', ') : academicBackground} />
+          <div className="mt-[18px] pt-[16px] border-t border-[#EEF2F7]">
+             <div className="grid grid-cols-3 gap-8">
+                <InfoColumn icon={DollarSign} label="COMPENSATION" value={formattedCompensation} />
+                <InfoColumn icon={LanguagesIcon} label="LANGUAGES" value={Array.isArray(languages) ? languages.join(', ') : languages} />
+                <InfoColumn icon={GraduationCap} label="EDUCATION" value={Array.isArray(academicBackground) ? academicBackground.join(', ') : academicBackground} />
+             </div>
           </div>
         </div>
 
         {/* Body Grid */}
-        <div className="mt-[34px] grid grid-cols-[2fr_1fr] gap-x-[44px] body-grid">
+        <div className="mt-[34px] grid grid-cols-[2.6fr_1fr] gap-x-[44px] body-grid">
           {/* Left Column */}
           <div>
             <SectionHeading className="text-[#94A3B8]">PROFESSIONAL BACKGROUND</SectionHeading>
-            <p className="text-base leading-[30px] font-medium text-[#475569] whitespace-pre-line">
+            <p className="text-base leading-[26px] font-medium text-[#334155] whitespace-pre-line text-justify mb-8">
               {professionalBackground}
             </p>
 
-            <div className="mt-[34px]">
-              <SectionHeading className="text-[#0F172A] font-black">MAIN PROJECTS</SectionHeading>
-              <ul className="space-y-[18px]">
+            <div>
+              <SectionHeading className="text-[#94A3B8]">MAIN PROJECTS</SectionHeading>
+              <ul className="space-y-[12px] mt-2">
                 {projectsList.map((project, index) => (
-                  <li key={index} className="flex items-start gap-[14px]">
-                    <div className="mt-[9px] w-[6px] h-[6px] bg-[#16A34A] rounded-full flex-shrink-0"></div>
-                    <span className="text-[15px] leading-6 font-medium text-[#475569]">{project}</span>
+                  <li key={index} className="flex items-start gap-[10px]">
+                    <div className="mt-[8px] w-[3px] h-[3px] bg-[#16A34A] rounded-full flex-shrink-0"></div>
+                    <span className="text-[15px] leading-6 font-medium text-[#334155]">{project}</span>
                   </li>
                 ))}
               </ul>
@@ -241,9 +237,9 @@ const CandidateReportPage: React.FC<CandidateReportPageProps> = ({
           {/* Right Column */}
           <div className="hard-skills-column">
             <SectionHeading className="text-[#94A3B8]">HARD SKILLS</SectionHeading>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2">
               {skillsList.map((skill, index) => (
-                <span key={index} className="bg-[#F8FAFC] border border-[#E2E8F0] text-[#475569] text-xs font-extrabold uppercase tracking-[0.12em] px-[14px] py-[10px] rounded-[10px]">
+                <span key={index} className="bg-[#FFFFFF] border border-[#E2E8F0] text-[#475569] text-[10px] font-bold uppercase tracking-wider px-[8px] py-[4px] rounded-[4px]">
                   {skill}
                 </span>
               ))}
@@ -252,8 +248,8 @@ const CandidateReportPage: React.FC<CandidateReportPageProps> = ({
         </div>
       </div>
 
-      <div className="hidden print:block fixed bottom-[22px] left-[16mm] right-[16mm]">
-        <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-[0.22em] text-[#CBD5E1]">
+      <div className="hidden print:block fixed bottom-[24px] left-[36px] right-[36px] border-t border-[#E2E8F0] pt-2">
+        <div className="flex justify-between items-center text-[10px] font-medium uppercase tracking-[0.1em] text-[#94A3B8]">
           <span>KAPTAS GLOBAL</span>
           <span>CONFIDENTIAL</span>
         </div>

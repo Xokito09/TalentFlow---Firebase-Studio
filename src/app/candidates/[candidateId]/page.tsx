@@ -6,7 +6,6 @@ import Link from "next/link";
 import { useAppStore } from '@/lib/store';
 import * as candidatesRepository from '@/lib/repositories/candidates';
 import * as applicationsRepository from '@/lib/repositories/applications';
-import * as positionsRepository from '@/lib/repositories/positions'; // Added import
 import { Candidate, Application, PipelineStageKey } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -43,12 +42,14 @@ const CandidateProfilePage: React.FC = () => {
     clients,
     clientsInitialized,
     loadClients,
+    positions,
+    positionsInitialized,
+    loadPositions
   } = useAppStore();
 
   const [candidate, setCandidate] = useState<Candidate | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
-  const [positionsById, setPositionsById] = useState<Record<string, { title: string }>>({}); // Added local state for positions
 
   useEffect(() => {
     const fetchCandidateAndApplications = async () => {
@@ -67,16 +68,9 @@ const CandidateProfilePage: React.FC = () => {
         const fetchedApplications = await applicationsRepository.getApplicationsByCandidateId(candidateId);
         setApplications(fetchedApplications);
 
-        // Fetch only referenced positions
-        const uniquePositionIds = Array.from(new Set(fetchedApplications.map(app => app.positionId)));
-        const fetchedPositions: Record<string, { title: string }> = {};
-        for (const positionId of uniquePositionIds) {
-          const position = await positionsRepository.getPositionById(positionId);
-          if (position) {
-            fetchedPositions[positionId] = { title: position.title };
-          }
+        if (!positionsInitialized) {
+            loadPositions();
         }
-        setPositionsById(fetchedPositions);
 
       } else {
         console.error("Candidate not found");
@@ -85,7 +79,7 @@ const CandidateProfilePage: React.FC = () => {
     };
 
     fetchCandidateAndApplications();
-  }, [candidateId, candidates, loadCandidates]);
+  }, [candidateId, candidates, loadCandidates, positionsInitialized, loadPositions]);
 
   useEffect(() => {
     if (!clientsInitialized) {
@@ -94,8 +88,8 @@ const CandidateProfilePage: React.FC = () => {
   }, [clientsInitialized, loadClients]);
 
   const getPositionTitle = (positionId: string) => {
-    // Use local positionsById state
-    return positionsById[positionId]?.title || "Unknown Position";
+    const position = positions.find(p => p.id === positionId);
+    return position?.title || "Unknown Position";
   };
 
   if (loading) {

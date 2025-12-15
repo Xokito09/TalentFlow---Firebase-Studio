@@ -51,6 +51,26 @@ export type Client = {
   notes?: string;
 };
 
+export type FunnelMetrics = {
+  sourced: number;
+  approached: number;
+  notInterested: number;
+  noResponse: number;
+  activePipeline: number;
+  shortlisted: number;
+  finalInterviews: number;
+};
+
+export const DEFAULT_FUNNEL_METRICS: FunnelMetrics = {
+  sourced: 0,
+  approached: 0,
+  notInterested: 0,
+  noResponse: 0,
+  activePipeline: 0,
+  shortlisted: 0,
+  finalInterviews: 0,
+};
+
 export type Position = {
   id: string;
   title: string;
@@ -62,6 +82,7 @@ export type Position = {
   updatedAt?: Timestamp; // Added updatedAt
   location?: string;
   department?: string;
+  funnelMetrics?: FunnelMetrics;
 };
 
 // For backward compatibility (will be removed later)

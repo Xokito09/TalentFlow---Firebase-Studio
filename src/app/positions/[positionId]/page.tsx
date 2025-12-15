@@ -7,12 +7,15 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
-import { ArrowLeft, Plus, ChevronDown, Settings, FileText, MapPin, Wallet } from 'lucide-react';
+import { ArrowLeft, Plus, ChevronDown, Settings, FileText, MapPin, Wallet, Loader2 } from 'lucide-react';
 import { Application, PipelineStageKey, Position as PositionType, Candidate } from '@/lib/types';
 import * as positionsRepository from '@/lib/repositories/positions';
 import * as candidateRepository from '@/lib/repositories/candidates';
 import { formatFirestoreDate } from '@/lib/utils';
 import AddCandidateModal from '@/components/positions/add-candidate-modal';
+import { FunnelSettingsModal } from '@/components/positions/funnel-settings-modal';
+import { exportPositionReportPdfByPositionId } from '@/lib/pdf/export-position-report-pdf';
+import { useToast } from "@/hooks/use-toast";
 
 const POSITION_STATUS_CONFIG: { [key: string]: { label: string; className: string; dotClassName: string } } = {
   "open": { label: "OPEN", className: "bg-green-100 text-green-700", dotClassName: "bg-green-500" },
@@ -58,6 +61,7 @@ const PositionDetailPage: React.FC = () => {
   const params = useParams();
   const router = useRouter();
   const positionId = params.positionId as string;
+  const { toast } = useToast();
 
   const {
     clients,
@@ -73,9 +77,11 @@ const PositionDetailPage: React.FC = () => {
   } = useAppStore();
 
   const [isAddCandidateModalOpen, setIsAddCandidateModalOpen] = useState(false);
+  const [isFunnelSettingsModalOpen, setIsFunnelSettingsModalOpen] = useState(false);
   const [currentPosition, setCurrentPosition] = useState<PositionType | null>(null);
   const [loadingPosition, setLoadingPosition] = useState(true);
   const [candidates, setCandidates] = useState<Map<string, Candidate>>(new Map());
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     const fetchPositionData = async () => {
@@ -137,6 +143,26 @@ const PositionDetailPage: React.FC = () => {
 
     fetchCandidates();
   }, [applicationsByPosition, positionId, candidates]);
+
+  const handleExportPdf = async () => {
+    setIsExporting(true);
+    try {
+      await exportPositionReportPdfByPositionId(positionId);
+      toast({
+        title: "Success",
+        description: "Position report downloaded successfully.",
+      });
+    } catch (error) {
+      console.error("Export error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to export position report.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
 
   if (loadingPosition) {
@@ -249,13 +275,22 @@ const PositionDetailPage: React.FC = () => {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Button variant="ghost" className="h-8 text-sm px-3">
+          <Button 
+            variant="ghost" 
+            className="h-8 text-sm px-3"
+            onClick={() => setIsFunnelSettingsModalOpen(true)}
+          >
             <Settings className="h-4 w-4 mr-2" />
             Funnel settings
           </Button>
-          <Button variant="secondary" className="h-8 text-sm px-3" disabled>
-            <FileText className="h-4 w-4 mr-2" />
-            Export PDF report
+          <Button 
+            variant="secondary" 
+            className="h-8 text-sm px-3" 
+            onClick={handleExportPdf}
+            disabled={isExporting}
+          >
+            {isExporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileText className="h-4 w-4 mr-2" />}
+            {isExporting ? "Exporting..." : "Export PDF report"}
           </Button>
           <Button onClick={() => setIsAddCandidateModalOpen(true)} className="h-8 text-sm px-3 bg-purple-600 hover:bg-purple-700 text-white">
             <Plus className="h-4 w-4 mr-2" />
@@ -303,6 +338,15 @@ const PositionDetailPage: React.FC = () => {
           onClose={() => setIsAddCandidateModalOpen(false)}
           clientId={client?.id || ''}
           positionId={positionId}
+        />
+      )}
+
+      {isFunnelSettingsModalOpen && currentPosition && (
+        <FunnelSettingsModal
+          isOpen={isFunnelSettingsModalOpen}
+          onClose={() => setIsFunnelSettingsModalOpen(false)}
+          positionId={positionId}
+          initialMetrics={currentPosition.funnelMetrics}
         />
       )}
     </div>

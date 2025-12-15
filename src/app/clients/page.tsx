@@ -49,7 +49,38 @@ const ClientList: React.FC = () => {
   const [clientPaymentTerms, setClientPaymentTerms] = useState('');
   const [clientNotes, setClientNotes] = useState('');
 
-  const filteredClients = clients;
+  const filteredClients = useMemo(() => {
+    return clients.filter((client) => {
+        // Tab filter (Relationship)
+        // Assuming 'partner' corresponds to existing clients ('client' or 'churn') 
+        // and 'prospect' corresponds to potential clients ('prospect' or 'lost')
+        const isPartnerTab = activeTab === 'partner';
+        const isClientOrChurn = client.relationshipStatus === 'client' || client.relationshipStatus === 'churn';
+        const isProspectOrLost = client.relationshipStatus === 'prospect' || client.relationshipStatus === 'lost';
+
+        if (isPartnerTab && !isClientOrChurn) return false;
+        if (!isPartnerTab && !isProspectOrLost) return false;
+
+        // Status filter
+        if (statusFilter !== 'all') {
+            if (statusFilter === 'active' && client.relationshipStatus !== 'client') return false;
+            if (statusFilter === 'churn' && client.relationshipStatus !== 'churn') return false;
+            if (statusFilter === 'open' && client.relationshipStatus !== 'prospect') return false;
+            if (statusFilter === 'lost' && client.relationshipStatus !== 'lost') return false;
+        }
+
+        // Search term filter
+        if (searchTerm) {
+            const lowerTerm = searchTerm.toLowerCase();
+            const matchesName = client.name.toLowerCase().includes(lowerTerm);
+            const matchesContact = client.pointOfContact.toLowerCase().includes(lowerTerm);
+            const matchesEmail = client.contactEmail.toLowerCase().includes(lowerTerm);
+            return matchesName || matchesContact || matchesEmail;
+        }
+
+        return true;
+    });
+  }, [clients, activeTab, statusFilter, searchTerm]);
 
   const indexOfLastClient = currentPage * ITEMS_PER_PAGE;
   const indexOfFirstClient = indexOfLastClient - ITEMS_PER_PAGE;
@@ -135,9 +166,13 @@ const ClientList: React.FC = () => {
               id: editingClientId,
           });
       } else {
+          // Pass without ID, let the store/repository handle creation and ID generation
+          // Casting as any because addClient expects Client which has id, but we are creating a new one
+          // Ideally the addClient signature should accept Omit<Client, 'id'> or similar for creation
+          // But based on current store implementation, we will pass a temporary ID that will be ignored/overwritten by the repository logic we updated
           addClient({
               ...baseClient,
-              id: `client-${Math.random()}`
+              id: '', // Will be replaced by Firestore ID in the store
           });
       }
       
@@ -358,7 +393,7 @@ const ClientList: React.FC = () => {
          </div>
       </Modal>
 
-      <ClientsHeader activeTab={activeTab} openNewClientModal={openNewClientModal} />
+      <ClientsHeader activeTab={activeTab} setActiveTab={setActiveTab} openNewClientModal={openNewClientModal} />
 
       <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
         
