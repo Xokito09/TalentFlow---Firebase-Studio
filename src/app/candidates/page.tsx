@@ -1,42 +1,33 @@
-import { getFirestore } from 'firebase-admin/firestore';
 import '@/lib/firebase/admin'; // Initialize Firebase Admin SDK
-import { Candidate } from '@/lib/types';
+import { type WithId, type Candidate } from '@/lib/types';
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import CandidatesListClient from "@/components/candidates/candidates-list-client";
+import { getPaginatedCandidates } from '@/lib/repositories/candidates';
 
-const ITEMS_PER_PAGE = 10;
+const CANDIDATES_LIMIT = 10;
 
-async function getCandidates(page: number = 1, limit: number = ITEMS_PER_PAGE): Promise<{ candidates: Candidate[], totalPages: number }> {
+async function getInitialCandidates() {
   try {
-    const db = getFirestore();
-    let candidatesRef = db.collection('candidates')
-      .orderBy('updatedAt', 'desc')
-      .orderBy('createdAt', 'desc');
+    const { candidates, nextCursor } = await getPaginatedCandidates({ limit: CANDIDATES_LIMIT });
     
-    const totalCandidatesSnapshot = await candidatesRef.count().get();
-    const totalItems = totalCandidatesSnapshot.data().count;
-    const totalPages = Math.ceil(totalItems / limit);
+    // Convert Timestamps to ISO strings for client component serialization if needed
+    const serializableCandidates = candidates.map(c => ({
+      ...c,
+      createdAt: c.createdAt?.toDate().toISOString(),
+      updatedAt: c.updatedAt?.toDate().toISOString(),
+    })) as WithId<Candidate>[];
 
-    const snapshot = await candidatesRef.offset((page - 1) * limit).limit(limit).get();
-
-    const candidates = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      createdAt: doc.data().createdAt?.toDate().toISOString(),
-      updatedAt: doc.data().updatedAt?.toDate().toISOString(),
-    })) as Candidate[];
-
-    return { candidates, totalPages };
+    return { candidates: serializableCandidates, nextCursor };
   } catch (error) {
-    console.error('Error fetching candidates for server render:', error);
-    return { candidates: [], totalPages: 0 };
+    console.error('Error fetching initial candidates for server render:', error);
+    return { candidates: [], nextCursor: undefined };
   }
 }
 
 export default async function CandidatesPage() {
-  const { candidates, totalPages } = await getCandidates(1, ITEMS_PER_PAGE);
+  const { candidates, nextCursor } = await getInitialCandidates();
 
   return (
     <>
@@ -52,8 +43,7 @@ export default async function CandidatesPage() {
       </div>
       <CandidatesListClient
         initialCandidates={candidates}
-        initialTotalPages={totalPages}
-        initialCurrentPage={1}
+        initialNextCursor={nextCursor}
       />
     </>
   );

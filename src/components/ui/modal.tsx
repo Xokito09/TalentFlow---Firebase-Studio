@@ -6,12 +6,14 @@ type ModalProps = {
   isOpen: boolean;
   onClose: () => void;
   title: string;
+  description?: string; // Add description prop
   children: React.ReactNode;
   maxWidth?: string;
 };
 
-export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, maxWidth = 'max-w-lg' }) => {
+export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, description, children, maxWidth = 'max-w-lg' }) => {
   const titleId = useId(); // Generate a unique ID for the title
+  const descriptionId = useId(); // Generate a unique ID for the description
 
   useEffect(() => {
     const handleEsc = (event: KeyboardEvent) => {
@@ -34,6 +36,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
         role="dialog" // Indicate that this is a dialog
         aria-modal="true" // Indicate that this is a modal dialog
         aria-labelledby={titleId} // Link the dialog to its title
+        aria-describedby={description ? descriptionId : undefined} // Link the dialog to its description
     >
       <div 
         className={`bg-white rounded-xl shadow-2xl w-full ${maxWidth} transform transition-all duration-300 ease-in-out`}
@@ -45,6 +48,9 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
             <X className="w-5 h-5" />
           </button>
         </div>
+        {description && (
+            <p id={descriptionId} className="sr-only">{description}</p> // Visually hidden description
+        )}
         <div className="p-6">{children}</div>
       </div>
     </div>

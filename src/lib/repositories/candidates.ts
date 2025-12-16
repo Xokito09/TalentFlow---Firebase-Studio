@@ -1,6 +1,6 @@
-import { doc, collection, getDoc, getDocs, query, where, addDoc, updateDoc, orderBy, limit, serverTimestamp, Timestamp } from "firebase/firestore";
+import { doc, collection, getDoc, getDocs, query, where, addDoc, updateDoc, orderBy, limit, serverTimestamp, Timestamp, startAfter } from "firebase/firestore";
 import { db } from "../firebase";
-import { Candidate } from "../types";
+import { Candidate, WithId } from "../types";
 
 const candidatesCollection = collection(db, "candidates");
 
@@ -22,10 +22,34 @@ export async function getCandidateById(candidateId: string): Promise<Candidate |
   return null;
 }
 
-export async function getAllCandidates(limitNum: number = 200): Promise<Candidate[]> {
+export async function getAllCandidates(limitNum: number = 200): Promise<WithId<Candidate>[]> {
   const q = query(candidatesCollection, orderBy("fullName"), limit(limitNum));
   const querySnapshot = await getDocs(q);
   return querySnapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as Omit<Candidate, "id">) }));
+}
+
+export async function getPaginatedCandidates({ cursor, limit: numLimit = 10 }: { cursor?: string; limit?: number }): Promise<{ candidates: WithId<Candidate>[]; nextCursor?: string }> {
+  let q = query(candidatesCollection, orderBy("createdAt", "desc"));
+
+  if (cursor) {
+    const cursorDoc = await getDoc(doc(db, "candidates", cursor));
+    if (cursorDoc.exists()) {
+      q = query(q, startAfter(cursorDoc));
+    }
+  }
+
+  q = query(q, limit(numLimit));
+
+  const documentSnapshots = await getDocs(q);
+  const candidates: WithId<Candidate>[] = documentSnapshots.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  })) as WithId<Candidate>[];
+
+  const lastVisible = documentSnapshots.docs[documentSnapshots.docs.length - 1];
+  const nextCursor = lastVisible ? lastVisible.id : undefined;
+
+  return { candidates, nextCursor };
 }
 
 export async function findCandidateByEmail(email: string): Promise<Candidate | null> {

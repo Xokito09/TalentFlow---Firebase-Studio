@@ -122,37 +122,47 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
     set((state) => ({
       positionsLoadingByClient: {
-        ...state.positionsLoadingByPosition,
+        ...state.positionsLoadingByClient,
         [clientId]: true,
       },
     }));
-    const clientPositions = await getPositionsByClientId(clientId);
-    set((state) => {
-      const updatedPositionsByClient = {
-        ...state.positionsByClient,
-        [clientId]: clientPositions,
-      };
+    try {
+      const clientPositions = await getPositionsByClientId(clientId);
+      set((state) => {
+        const updatedPositionsByClient = {
+          ...state.positionsByClient,
+          [clientId]: clientPositions,
+        };
 
-      const existingGlobalPositions = state.positions ?? [];
-      const newOrUpdatedGlobalPositions = clientPositions.reduce((acc, currentPosition) => {
-        const existingIndex = acc.findIndex(p => p.id === currentPosition.id);
-        if (existingIndex > -1) {
-          acc[existingIndex] = currentPosition;
-        } else {
-          acc.push(currentPosition);
-        }
-        return acc;
-      }, [...existingGlobalPositions]);
+        const existingGlobalPositions = state.positions ?? [];
+        const newOrUpdatedGlobalPositions = clientPositions.reduce((acc, currentPosition) => {
+          const existingIndex = acc.findIndex(p => p.id === currentPosition.id);
+          if (existingIndex > -1) {
+            acc[existingIndex] = currentPosition;
+          } else {
+            acc.push(currentPosition);
+          }
+          return acc;
+        }, [...existingGlobalPositions]);
 
-      return {
-        positionsByClient: updatedPositionsByClient,
-        positions: newOrUpdatedGlobalPositions,
-        positionsLoadingByPosition: {
-          ...state.positionsLoadingByPosition,
+        return {
+          positionsByClient: updatedPositionsByClient,
+          positions: newOrUpdatedGlobalPositions,
+          positionsLoadingByClient: {
+            ...state.positionsLoadingByClient,
+            [clientId]: false,
+          },
+        };
+      });
+    } catch (error) {
+      console.error(`Failed to load positions for client ${clientId}`, error);
+      set((state) => ({
+        positionsLoadingByClient: {
+          ...state.positionsLoadingByClient,
           [clientId]: false,
         },
-      };
-    });
+      }));
+    }
   },
   addPosition: async (positionData: Omit<Position, "id">) => {
     const newPosition = await createPosition(positionData);
@@ -241,17 +251,27 @@ export const useAppStore = create<AppState>((set, get) => ({
         [positionId]: true,
       },
     }));
-    const applications = await applicationsRepository.getApplicationsByPositionId(positionId);
-    set((state) => ({
-      applicationsByPosition: {
-        ...state.applicationsByPosition,
-        [positionId]: applications,
-      },
-      applicationsLoadingByPosition: {
-        ...state.applicationsLoadingByPosition,
-        [positionId]: false,
-      },
-    }));
+    try {
+      const applications = await applicationsRepository.getApplicationsByPositionId(positionId);
+      set((state) => ({
+        applicationsByPosition: {
+          ...state.applicationsByPosition,
+          [positionId]: applications,
+        },
+        applicationsLoadingByPosition: {
+          ...state.applicationsLoadingByPosition,
+          [positionId]: false,
+        },
+      }));
+    } catch (error) {
+      console.error(`Failed to load applications for position ${positionId}`, error);
+      set((state) => ({
+        applicationsLoadingByPosition: {
+          ...state.applicationsLoadingByPosition,
+          [positionId]: false,
+        },
+      }));
+    }
   },
 
   createCandidateAndApplyToPosition: async ({ clientId, positionId, candidate: candidateData, appliedCompensation }) => {

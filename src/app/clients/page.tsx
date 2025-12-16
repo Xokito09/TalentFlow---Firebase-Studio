@@ -195,7 +195,8 @@ const ClientList: React.FC = () => {
 
   const getStatusFilterLabel = () => {
     if (statusFilter === 'all') return activeTab === 'partner' ? 'All Clients' : 'All Prospects';
-    return CLIENT_STATUS_CONFIG[statusFilter as keyof typeof CLIENT_STATUS_CONFIG]?.label ?? 'Status'; // Safely access label
+    const cfg = CLIENT_STATUS_CONFIG[statusFilter as keyof typeof CLIENT_STATUS_CONFIG];
+    return cfg?.label ?? 'Status';
   };
 
   return (
@@ -205,6 +206,7 @@ const ClientList: React.FC = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={editingClientId ? 'Edit Account' : activeTab === 'partner' ? 'New Client' : 'New Prospect'}
+        description={editingClientId ? 'Edit the details of an existing client or prospect account.' : activeTab === 'partner' ? 'Create a new client account.' : 'Create a new prospect account.'}
         maxWidth="max-w-2xl"
       >
          <div className="space-y-6 mb-8">
@@ -262,10 +264,10 @@ const ClientList: React.FC = () => {
                                 onChange={(e) => setClientStatus(e.target.value as any)}
                                 className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-purple-500 outline-none appearance-none cursor-pointer"
                             >
-                                <option value="prospect">{CLIENT_STATUS_CONFIG.prospect.label}</option>
-                                <option value="client">{CLIENT_STATUS_CONFIG.client.label}</option>
-                                <option value="churn">{CLIENT_STATUS_CONFIG.churn.label}</option>
-                                <option value="lost">{CLIENT_STATUS_CONFIG.lost.label}</option>
+                                <option value="prospect">{CLIENT_STATUS_CONFIG.prospect?.label}</option>
+                                <option value="client">{CLIENT_STATUS_CONFIG.client?.label}</option>
+                                <option value="churn">{CLIENT_STATUS_CONFIG.churn?.label}</option>
+                                <option value="lost">{CLIENT_STATUS_CONFIG.lost?.label}</option>
                             </select>
                             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                         </div>
@@ -410,22 +412,22 @@ const ClientList: React.FC = () => {
                 {activeTab === 'partner' ? (
                     <>
                         <button onClick={() => { setStatusFilter('client'); setActiveDropdown(null); }} className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 text-emerald-700 font-medium flex justify-between items-center">
-                            <span>{CLIENT_STATUS_CONFIG.client.label}s</span>
+                            <span>{CLIENT_STATUS_CONFIG.client?.label}s</span>
                             {statusFilter === 'client' && <Check className="w-4 h-4" />}
                         </button>
                         <button onClick={() => { setStatusFilter('churn'); setActiveDropdown(null); }} className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 text-red-600 font-medium flex justify-between items-center">
-                            <span>{CLIENT_STATUS_CONFIG.churn.label}s</span>
+                            <span>{CLIENT_STATUS_CONFIG.churn?.label}s</span>
                             {statusFilter === 'churn' && <Check className="w-4 h-4" />}
                         </button>
                     </>
                 ) : (
                     <>
                         <button onClick={() => { setStatusFilter('prospect'); setActiveDropdown(null); }} className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 text-blue-700 font-medium flex justify-between items-center">
-                            <span>{CLIENT_STATUS_CONFIG.prospect.label}s</span>
+                            <span>{CLIENT_STATUS_CONFIG.prospect?.label}s</span>
                             {statusFilter === 'prospect' && <Check className="w-4 h-4" />}
                         </button>
                         <button onClick={() => { setStatusFilter('lost'); setActiveDropdown(null); }} className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 text-slate-500 font-medium flex justify-between items-center">
-                            <span>{CLIENT_STATUS_CONFIG.lost.label}s</span>
+                            <span>{CLIENT_STATUS_CONFIG.lost?.label}s</span>
                             {statusFilter === 'lost' && <Check className="w-4 h-4" />}
                         </button>
                     </>

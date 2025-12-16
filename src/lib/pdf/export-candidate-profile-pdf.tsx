@@ -38,7 +38,6 @@ export async function exportCandidateProfilePdfByApplicationId(applicationId: st
       hardSkills: candidate.hardSkills,
       phone: candidate.phone,
       photoUrl: candidate.photoUrl,
-      photoThumbUrl: candidate.photoThumbUrl, // Pass thumbnail as a fallback
     };
   
     const blob = await pdf(<CandidateProfileDocument {...props} />).toBlob();

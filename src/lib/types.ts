@@ -1,6 +1,8 @@
 import type { LucideIcon } from "lucide-react";
 import { Timestamp } from "firebase/firestore";
 
+export type WithId<T> = T & { id: string };
+
 export type NavItem = {
   title: string;
   href: string;
@@ -95,6 +97,7 @@ export type Application = {
   stageKey: PipelineStageKey;
   appliedDate: Timestamp;
   updatedAt: Timestamp;
+  createdAt: Timestamp;
 
   // Normalized Per-Application Fields
   appliedRoleTitle?: string;

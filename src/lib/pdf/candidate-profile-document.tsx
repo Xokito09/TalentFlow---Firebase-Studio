@@ -17,7 +17,6 @@ interface CandidateProfileDocumentProps {
   mainProjects?: string[] | string;
   hardSkills?: string[] | string;
   photoUrl?: string;
-  photoThumbUrl?: string; // Added for fallback
 }
 
 const normalizeToArray = (value?: string | string[]): string[] => {
@@ -281,7 +280,6 @@ export const CandidateProfilePage: React.FC<CandidateProfileDocumentProps> = (pr
         mainProjects,
         hardSkills,
         photoUrl,
-        photoThumbUrl,
       } = props;
     
       const skillsList = normalizeToArray(hardSkills);
@@ -291,7 +289,7 @@ export const CandidateProfilePage: React.FC<CandidateProfileDocumentProps> = (pr
         ? compensation
         : `USD ${compensation} monthly`;
     
-      const imageSrc = photoUrl || photoThumbUrl;
+      const imageSrc = photoUrl;
 
   return (
     <Page size="A4" style={styles.page}>
