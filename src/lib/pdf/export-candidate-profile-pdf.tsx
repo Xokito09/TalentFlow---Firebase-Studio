@@ -1,37 +1,13 @@
 import React from 'react';
-import { pdf, Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer';
+import { pdf } from '@react-pdf/renderer';
 import { CandidateProfileDocument } from './candidate-profile-document';
 import * as applicationsRepository from '@/lib/repositories/applications';
 import * as candidatesRepository from '@/lib/repositories/candidates';
 import * as positionsRepository from '@/lib/repositories/positions';
-
-const PDF_DEBUG_MINIMAL = false; // Set to false to test CandidateProfileDocument
+import { saveAs } from 'file-saver';
 
 export async function exportCandidateProfilePdfByApplicationId(applicationId: string): Promise<void> {
   try {
-    if (PDF_DEBUG_MINIMAL) {
-      const blob = await pdf(
-        <Document>
-          <Page size="A4">
-            <Text>PDF OK</Text>
-          </Page>
-        </Document>
-      ).toBlob();
-
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `minimal_pdf_debug.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      
-      setTimeout(() => {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }, 100);
-      return;
-    }
-
     const application = await applicationsRepository.getApplicationById(applicationId);
     if (!application) {
       throw new Error("Application not found.");
@@ -62,21 +38,12 @@ export async function exportCandidateProfilePdfByApplicationId(applicationId: st
       hardSkills: candidate.hardSkills,
       phone: candidate.phone,
       photoUrl: candidate.photoUrl,
+      photoThumbUrl: candidate.photoThumbUrl, // Pass thumbnail as a fallback
     };
   
     const blob = await pdf(<CandidateProfileDocument {...props} />).toBlob();
-  
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Candidate Profile ${candidate.fullName}.pdf`;
-    document.body.appendChild(a);
-    a.click();
     
-    setTimeout(() => {
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }, 100);
+    saveAs(blob, `Candidate Profile ${candidate.fullName}.pdf`);
 
   } catch (error) {
     console.error("Failed to export PDF:", error);

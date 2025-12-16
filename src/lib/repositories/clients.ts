@@ -1,15 +1,43 @@
 import { db } from '../firebase';
 import { Client } from '../types';
-import { collection, getDocs, setDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, setDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
 
 function removeUndefined(obj: any) {
   const newObj: { [key: string]: any } = {};
   for (const key in obj) {
-    if (obj[key] !== undefined) {
-      newObj[key] = obj[key];
+    if (obj.hasOwnProperty(key)) {
+      if (obj[key] !== undefined) {
+        newObj[key] = obj[key];
+      }
     }
   }
   return newObj;
+}
+
+export async function getClientById(clientId: string): Promise<Client | null> {
+  const clientDocRef = doc(db, 'clients', clientId);
+  const clientDocSnap = await getDoc(clientDocRef);
+  if (clientDocSnap.exists()) {
+    const data = clientDocSnap.data();
+    return {
+      id: clientDocSnap.id,
+      name: data.name ?? "",
+      industry: data.industry ?? "",
+      location: data.location ?? "",
+      website: data.website ?? "",
+      pointOfContact: data.pointOfContact ?? "",
+      contactEmail: data.contactEmail ?? "",
+      taxId: data.taxId ?? "",
+      billingAddress: data.billingAddress ?? "",
+      billingEmail: data.billingEmail ?? "",
+      paymentTerms: data.paymentTerms ?? "",
+      notes: data.notes ?? "",
+      logoUrl: data.logoUrl ?? "",
+      relationshipStatus: data.relationshipStatus ?? "prospect",
+      ownerId: data.ownerId ?? "",
+    } as Client;
+  }
+  return null;
 }
 
 export async function getAllClients(): Promise<Client[]> {

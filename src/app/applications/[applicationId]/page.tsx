@@ -1,103 +1,57 @@
-"use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { useMemo } from 'react';
-import { Application, Candidate, Position } from '@/lib/types';
-import * as applicationsRepository from '@/lib/repositories/applications';
-import * as candidatesRepository from '@/lib/repositories/candidates';
-import * as positionsRepository from '@/lib/repositories/positions';
 import CandidateReportPage from '@/components/applications/candidate-report-page';
 import { Button } from "@/components/ui/button";
-import { FileDown, Loader2 } from "lucide-react";
+import { FileDown } from "lucide-react";
+import { Application, Candidate, Position, Client } from '@/lib/types';
 
-const ApplicationCvPage: React.FC = () => {
-  const params = useParams();
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const applicationId = params.applicationId as string;
+type ApplicationDetailPageProps = {
+  params: { applicationId: string };
+  searchParams: { [key: string]: string | string[] | undefined };
+};
 
-  const [application, setApplication] = useState<Application | null>(null);
-  const [candidate, setCandidate] = useState<Candidate | null>(null);
-  const [position, setPosition] = useState<Position | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+const ApplicationCvPage = async ({ params, searchParams }: ApplicationDetailPageProps) => {
+  const applicationId = params.applicationId;
+  const from = searchParams.from as string;
+  const fromPositionId = searchParams.positionId as string;
+  const fromCandidateId = searchParams.candidateId as string;
 
-  const from = searchParams.get("from");
-  const fromPositionId = searchParams.get("positionId");
-  const fromCandidateId = searchParams.get("candidateId");
+  let application: Application | null = null;
+  let candidate: Candidate | null = null;
+  let position: Position | null = null;
+  let client: Client | null = null;
+  let error: string | null = null;
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!applicationId) return;
-      setLoading(true);
-      try {
-        const app = await applicationsRepository.getApplicationById(applicationId);
-        if (app) {
-          setApplication(app);
-          const [cand, pos] = await Promise.all([
-            candidatesRepository.getCandidateById(app.candidateId),
-            positionsRepository.getPositionById(app.positionId),
-          ]);
-          setCandidate(cand);
-          setPosition(pos);
-        } else {
-          setError("Application not found.");
-        }
-      } catch (e) {
-        console.error(e);
-        setError("Failed to load application data.");
+  try {
+    // Assuming fetch works with an absolute URL in a server component environment
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/applications/${applicationId}/detail`);
+
+    if (!response.ok) {
+      error = response.status === 404 ? "Application not found." : "Failed to load application data.";
+    } else {
+      const data = await response.json();
+      application = data.application;
+      candidate = data.candidate;
+      position = data.position;
+      client = data.client;
+
+      if (!application || !candidate || !position) {
+        error = "Incomplete data received from API.";
       }
-      setLoading(false);
-    };
-    fetchData();
-  }, [applicationId]);
-
-  const handleBack = () => {
-    if (from === "position" && fromPositionId) {
-      router.push(`/positions/${fromPositionId}`);
-    } else if (from === "candidate" && fromCandidateId) {
-      router.push(`/candidates/${fromCandidateId}`);
-    } else {
-      router.back();
     }
-  };
-
-  const handleDownloadPdf = async () => {
-    setIsDownloading(true);
-    try {
-      const { exportCandidateProfilePdfByApplicationId } = await import('@/lib/pdf/export-candidate-profile-pdf');
-      await exportCandidateProfilePdfByApplicationId(applicationId);
-    } catch (error) {
-      console.error("Failed to download PDF:", error);
-      alert("Failed to download PDF. Please check the console for details.");
-    }
-    setIsDownloading(false);
-  };
-
-  const backButtonLabel = useMemo(() => {
-    if (from === "position") {
-      return "Back to Position";
-    } else if (from === "candidate") {
-      return "Back to Candidate Profile";
-    } else {
-      return "Back";
-    }
-  }, [from]);
-
-  if (loading) {
-    return <div className="p-8 text-center">Loading application...</div>;
+  } catch (e) {
+    console.error(e);
+    error = "Failed to load application data due to a network error.";
   }
+
 
   if (error) {
     return <div className="p-8 text-center text-red-500">{error}</div>;
   }
 
   if (!application || !candidate || !position) {
-    return <div className="p-8 text-center">Incomplete data.</div>;
+    return <div className="p-8 text-center">Loading or incomplete data...</div>;
   }
-
+  
   const candidateReportProps = {
     name: candidate.fullName,
     role: application.appliedRoleTitle || candidate.currentTitle || '',
@@ -111,21 +65,25 @@ const ApplicationCvPage: React.FC = () => {
     mainProjects: application.mainProjectsAtApply || candidate.mainProjects,
     hardSkills: candidate.hardSkills,
     phone: candidate.phone,
-    onBack: handleBack,
-    backButtonLabel: backButtonLabel,
     candidateId: candidate.id,
+    applicationId: applicationId,
+    from,
+    fromPositionId,
+    fromCandidateId,
   };
 
   return (
     <div>
       <div className="max-w-4xl mx-auto p-4 sm:p-8 print:hidden">
-        <Button onClick={handleDownloadPdf} disabled={isDownloading}>
-          {isDownloading ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <FileDown className="mr-2 h-4 w-4" />
-          )}
-          {isDownloading ? "Generating..." : "Download PDF"}
+      <Button
+          onClick={async () => {
+            "use server";
+            const { exportCandidateProfilePdfByApplicationId } = await import('@/lib/pdf/export-candidate-profile-pdf');
+            await exportCandidateProfilePdfByApplicationId(applicationId);
+          }}
+        >
+          <FileDown className="mr-2 h-4 w-4" />
+          Download PDF
         </Button>
       </div>
       <CandidateReportPage {...candidateReportProps} />

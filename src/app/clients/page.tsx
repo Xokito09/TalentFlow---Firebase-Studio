@@ -15,7 +15,7 @@ const ClientList: React.FC = () => {
   const { clients, setViewState, addClient, updateClient, viewState, clientsLoading, clientsInitialized, loadClients } = useAppStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'partner' | 'prospect'>('partner');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'churn' | 'open' | 'lost'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'client' | 'churn' | 'prospect' | 'lost'>('all'); // Changed 'active' to 'client' and 'open' to 'prospect'
   const [activeDropdown, setActiveDropdown] = useState<'status' | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   useEffect(() => {
@@ -63,9 +63,9 @@ const ClientList: React.FC = () => {
 
         // Status filter
         if (statusFilter !== 'all') {
-            if (statusFilter === 'active' && client.relationshipStatus !== 'client') return false;
+            if (statusFilter === 'client' && client.relationshipStatus !== 'client') return false; // Changed from 'active'
             if (statusFilter === 'churn' && client.relationshipStatus !== 'churn') return false;
-            if (statusFilter === 'open' && client.relationshipStatus !== 'prospect') return false;
+            if (statusFilter === 'prospect' && client.relationshipStatus !== 'prospect') return false; // Changed from 'open'
             if (statusFilter === 'lost' && client.relationshipStatus !== 'lost') return false;
         }
 
@@ -194,12 +194,8 @@ const ClientList: React.FC = () => {
   };
 
   const getStatusFilterLabel = () => {
-      if (statusFilter === 'all') return activeTab === 'partner' ? 'All Clients' : 'All Prospects';
-      if (statusFilter === 'active') return CLIENT_STATUS_CONFIG.client.label + 's';
-      if (statusFilter === 'churn') return CLIENT_STATUS_CONFIG.churn.label + 's';
-      if (statusFilter === 'open') return CLIENT_STATUS_CONFIG.prospect.label + 's';
-      if (statusFilter === 'lost') return CLIENT_STATUS_CONFIG.lost.label + 's';
-      return 'Status';
+    if (statusFilter === 'all') return activeTab === 'partner' ? 'All Clients' : 'All Prospects';
+    return CLIENT_STATUS_CONFIG[statusFilter as keyof typeof CLIENT_STATUS_CONFIG]?.label ?? 'Status'; // Safely access label
   };
 
   return (
@@ -413,9 +409,9 @@ const ClientList: React.FC = () => {
                 
                 {activeTab === 'partner' ? (
                     <>
-                        <button onClick={() => { setStatusFilter('active'); setActiveDropdown(null); }} className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 text-emerald-700 font-medium flex justify-between items-center">
+                        <button onClick={() => { setStatusFilter('client'); setActiveDropdown(null); }} className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 text-emerald-700 font-medium flex justify-between items-center">
                             <span>{CLIENT_STATUS_CONFIG.client.label}s</span>
-                            {statusFilter === 'active' && <Check className="w-4 h-4" />}
+                            {statusFilter === 'client' && <Check className="w-4 h-4" />}
                         </button>
                         <button onClick={() => { setStatusFilter('churn'); setActiveDropdown(null); }} className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 text-red-600 font-medium flex justify-between items-center">
                             <span>{CLIENT_STATUS_CONFIG.churn.label}s</span>
@@ -424,9 +420,9 @@ const ClientList: React.FC = () => {
                     </>
                 ) : (
                     <>
-                        <button onClick={() => { setStatusFilter('open'); setActiveDropdown(null); }} className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 text-blue-700 font-medium flex justify-between items-center">
+                        <button onClick={() => { setStatusFilter('prospect'); setActiveDropdown(null); }} className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 text-blue-700 font-medium flex justify-between items-center">
                             <span>{CLIENT_STATUS_CONFIG.prospect.label}s</span>
-                            {statusFilter === 'open' && <Check className="w-4 h-4" />}
+                            {statusFilter === 'prospect' && <Check className="w-4 h-4" />}
                         </button>
                         <button onClick={() => { setStatusFilter('lost'); setActiveDropdown(null); }} className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 text-slate-500 font-medium flex justify-between items-center">
                             <span>{CLIENT_STATUS_CONFIG.lost.label}s</span>

@@ -97,16 +97,21 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
   loadClients: async () => {
-    if (get().clientsInitialized) {
+    if (get().clientsInitialized || get().clientsLoading) {
       return;
     }
     set({ clientsLoading: true });
-    const clients = await clientsRepository.getAllClients();
-    const normalizedClients = clients.map(client => ({
-        ...client,
-        relationshipStatus: client.relationshipStatus || 'client'
-    }));
-    set({ clients: normalizedClients, clientsInitialized: true, clientsLoading: false });
+    try {
+      const clients = await clientsRepository.getAllClients();
+      const normalizedClients = clients.map(client => ({
+          ...client,
+          relationshipStatus: client.relationshipStatus || 'client'
+      }));
+      set({ clients: normalizedClients, clientsInitialized: true, clientsLoading: false });
+    } catch (e) {
+      console.error("Failed to load clients", e);
+      set({ clientsLoading: false });
+    }
   },
 
   positionsByClient: {},
@@ -189,12 +194,17 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   loadCandidates: async () => {
-    if (get().candidatesInitialized) {
+    if (get().candidatesInitialized || get().candidatesLoading) {
       return;
     }
     set({ candidatesLoading: true });
-    const candidates = await candidatesRepository.getAllCandidates();
-    set({ candidates, candidatesInitialized: true, candidatesLoading: false });
+    try {
+      const candidates = await candidatesRepository.getAllCandidates();
+      set({ candidates, candidatesInitialized: true, candidatesLoading: false });
+    } catch (e) {
+       console.error("Failed to load candidates", e);
+       set({ candidatesLoading: false });
+    }
   },
 
   updateCandidateInStore: async (candidateId, data) => {
@@ -207,7 +217,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   loadPositions: async () => {
-    if (get().positionsInitialized) {
+    if (get().positionsInitialized || get().positionsLoading) {
       return;
     }
     set({ positionsLoading: true });

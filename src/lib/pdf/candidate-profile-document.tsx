@@ -17,6 +17,7 @@ interface CandidateProfileDocumentProps {
   mainProjects?: string[] | string;
   hardSkills?: string[] | string;
   photoUrl?: string;
+  photoThumbUrl?: string; // Added for fallback
 }
 
 const normalizeToArray = (value?: string | string[]): string[] => {
@@ -111,6 +112,7 @@ const styles = StyleSheet.create({
   photo: {
     width: '100%',
     height: '100%',
+    objectFit: 'cover',
   },
   nameAndTitle: {
     flexGrow: 1,
@@ -279,6 +281,7 @@ export const CandidateProfilePage: React.FC<CandidateProfileDocumentProps> = (pr
         mainProjects,
         hardSkills,
         photoUrl,
+        photoThumbUrl,
       } = props;
     
       const skillsList = normalizeToArray(hardSkills);
@@ -288,6 +291,8 @@ export const CandidateProfilePage: React.FC<CandidateProfileDocumentProps> = (pr
         ? compensation
         : `USD ${compensation} monthly`;
     
+      const imageSrc = photoUrl || photoThumbUrl;
+
   return (
     <Page size="A4" style={styles.page}>
      <View style={styles.content}>
@@ -305,7 +310,7 @@ export const CandidateProfilePage: React.FC<CandidateProfileDocumentProps> = (pr
 
             <View style={styles.identityRow}>
             <View style={styles.photoBox}>
-                {photoUrl && <Image src={photoUrl} style={styles.photo} />}
+                {imageSrc && <Image src={imageSrc} style={styles.photo} />}
             </View>
             <View style={styles.nameAndTitle}>
                 <Text style={styles.name}>{name}</Text>

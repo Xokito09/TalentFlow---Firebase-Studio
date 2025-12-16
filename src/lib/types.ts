@@ -23,6 +23,7 @@ export type Candidate = {
   // Identity and core profile fields as per prompt
   linkedinUrl?: string;
   photoUrl?: string;
+  photoThumbUrl?: string;
   hardSkills?: string[];
   languages?: string[];
   academicBackground?: string[];
@@ -86,9 +87,6 @@ export type Position = {
   funnelMetrics?: FunnelMetrics;
 };
 
-// For backward compatibility (will be removed later)
-export type ApplicationStatus = 'Sourced' | 'Screening' | 'Interview' | 'Offer' | 'Hired' | 'Rejected';
-
 export type Application = {
   id: string;
   candidateId: string;
@@ -103,5 +101,4 @@ export type Application = {
   appliedCompensation?: string;
   professionalBackgroundAtApply?: string;
   mainProjectsAtApply?: string[];
-  status?: ApplicationStatus; // Keep for backward compatibility
 };

@@ -20,9 +20,6 @@ const applicationFromDoc = (doc: any): Application => {
         appliedCompensation: data.appliedCompensation || '',
         professionalBackgroundAtApply: data.professionalBackgroundAtApply || '',
         mainProjectsAtApply: data.mainProjectsAtApply || [],
-        candidateSnapshot: data.candidateSnapshot || {},
-        applicationSnapshot: data.applicationSnapshot || {},
-        status: data.status,
     };
 };
 
@@ -129,5 +126,5 @@ export async function updateApplication(applicationId: string, patch: Partial<Om
     ...patch,
     updatedAt: serverTimestamp(),
   };
-  await updateDoc(applicationDocRef, dataToUpdate);
+  await updateDoc(applicationDocRef, dataToToUpdate);
 }
