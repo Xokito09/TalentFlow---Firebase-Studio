@@ -8,42 +8,49 @@ import { getPaginatedCandidates } from '@/lib/repositories/candidates';
 
 const CANDIDATES_LIMIT = 10;
 
-async function getInitialCandidates() {
+async function getInitialData() {
   try {
     const { candidates, nextCursor } = await getPaginatedCandidates({ limit: CANDIDATES_LIMIT });
+
+    const totalCandidates = (await getDocs(collection(db, 'candidates'))).size;
+    const totalPages = Math.ceil(totalCandidates / CANDIDATES_LIMIT);
     
-    // Convert Timestamps to ISO strings for client component serialization if needed
+    // Convert Timestamps to ISO strings for client component serialization
     const serializableCandidates = candidates.map(c => ({
       ...c,
       createdAt: c.createdAt?.toDate().toISOString(),
       updatedAt: c.updatedAt?.toDate().toISOString(),
     })) as WithId<Candidate>[];
 
-    return { candidates: serializableCandidates, nextCursor };
+    return { candidates: serializableCandidates, nextCursor, totalPages, currentPage: 1 };
   } catch (error) {
     console.error('Error fetching initial candidates for server render:', error);
-    return { candidates: [], nextCursor: undefined };
+    return { candidates: [], nextCursor: undefined, totalPages: 1, currentPage: 1 };
   }
 }
 
+// Re-import `collection` and `getDocs` as they are used in `getInitialData`
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+
 export default async function CandidatesPage() {
-  const { candidates, nextCursor } = await getInitialCandidates();
+  const { candidates, totalPages, currentPage } = await getInitialData();
 
   return (
     <>
-      <div className="flex items-center justify-between">
-        <PageHeader
-          title="Candidates"
-          description="Manage your talent pool and candidate information."
-        />
+      <PageHeader
+        title="Candidates"
+        description="Manage your talent pool and candidate information."
+      >
         <Button>
           <PlusCircle className="mr-2" />
           Add Candidate
         </Button>
-      </div>
+      </PageHeader>
       <CandidatesListClient
         initialCandidates={candidates}
-        initialNextCursor={nextCursor}
+        initialTotalPages={totalPages}
+        initialCurrentPage={currentPage}
       />
     </>
   );

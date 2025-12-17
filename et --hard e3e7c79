@@ -1,0 +1,22 @@
+[33me3e7c79[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m Fix ProspectBoard client component and pagination work
+[33md22eeb5[m Fix candidate photos and SSR data loading
+[33m5b20b47[m fix: stabilize client/position/candidate views and reports
+[33m1a8db5f[m feat: position report done
+[33m26aedd5[m feat: pdf cdd done
+[33m3e332fc[m Changes before Firebase Studio auto-run
+[33m276bbaa[m Changes before Firebase Studio auto-run
+[33ma84fc9f[m feat everything
+[33mb7e3dfe[m feat: implement candidate application profile (CV layout) and fix application flow
+[33mf2f5698[m feat(applications): add per-role application CV flow + stabilize multi-application data model
+[33m02b4c37[m Changes before Firebase Studio auto-run
+[33md0e37f3[m feat: firestore clients + fixes
+[33ma2d0002[m Connect clients and positions to Firestore
+[33m3adebab[m Add client done
+[33mbb048d8[m Open src/app/page.tsx. I understand that the Add Prospect button current
+[33m9ac33a3[m Still not working
+[33m669fbfc[m The app isn't starting. Please investigate what could be wrong based on
+[33m6316554[m npm install next@15.3.6 react@19.2.1 react-dom@19.2.1
+[33me1c3e16[m feat: implement client and position frontend pages
+[33m6ffaa5a[m Changes before Firebase Studio auto-run
+[33m3ce56d0[m Initial prototype
+[33mbd59927[m Initialized workspace with Firebase Studio

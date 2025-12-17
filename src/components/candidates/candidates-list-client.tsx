@@ -21,7 +21,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { MoreHorizontal, PlusCircle, FileDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { PageHeader } from "@/components/page-header";
 import { exportCandidatePdf } from '@/lib/utils';
 import * as applicationsRepository from '@/lib/repositories/applications';
 import EditCandidateModal from "@/components/candidates/edit-candidate-modal";
@@ -127,7 +126,7 @@ export default function CandidatesListClient({
   }, [pageCandidateIdsKey]);
 
   const handleExport = (candidateId: string) => {
-    exportCandidatePdf(candidateId, router);
+    exportCandidatePdf(candidateId);
   };
 
   const handleEditCandidate = (candidateId: string) => {
@@ -150,16 +149,6 @@ export default function CandidatesListClient({
 
   return (
     <>
-      <div className="flex items-center justify-between">
-        <PageHeader
-          title="Candidates"
-          description="Manage your talent pool and candidate information."
-        />
-        <Button>
-          <PlusCircle className="mr-2" />
-          Add Candidate
-        </Button>
-      </div>
       <Card>
         <CardHeader>
           <CardTitle>Talent Pool</CardTitle>
