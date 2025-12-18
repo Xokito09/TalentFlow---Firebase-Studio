@@ -8,7 +8,6 @@ import {
   DollarSign,
   Languages as LanguagesIcon,
   GraduationCap,
-  FileDown,
 } from "lucide-react";
 import Image from "next/image";
 import { Logo } from "@/components/logo";
@@ -103,16 +102,6 @@ const CandidateReportPage: React.FC<CandidateReportPageProps> = ({
       router.back();
     }
   };
-  
-  const handleDownloadPdf = async () => {
-    try {
-      const { exportCandidateProfilePdfByApplicationId } = await import('@/lib/pdf/export-candidate-profile-pdf');
-      await exportCandidateProfilePdfByApplicationId(applicationId);
-    } catch (error) {
-      console.error("Failed to download PDF:", error);
-      alert("Failed to download PDF. Please check the console for details.");
-    }
-  };
 
   const backButtonLabel = useMemo(() => {
     if (from === "position") {
@@ -135,12 +124,6 @@ const CandidateReportPage: React.FC<CandidateReportPageProps> = ({
 
   return (
     <div className="bg-[#F5F7FB] font-sans">
-       <div className="max-w-4xl mx-auto p-4 sm:p-8 print:hidden">
-        <Button onClick={handleDownloadPdf}>
-          <FileDown className="mr-2 h-4 w-4" />
-          Download PDF
-        </Button>
-      </div>
       <div className="max-w-[794px] mx-auto px-12 py-12">
         <div className="mb-4 print:hidden">
           <Button onClick={handleBack} variant="ghost" className="text-sm text-[#475569] hover:text-[#0F172A] flex items-center gap-2 pl-0">

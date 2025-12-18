@@ -1,51 +1,44 @@
-import React from 'react';
+"use client";
 import { pdf } from '@react-pdf/renderer';
-import { CandidateProfileDocument } from './candidate-profile-document';
-import * as applicationsRepository from '@/lib/repositories/applications';
-import * as candidatesRepository from '@/lib/repositories/candidates';
-import * as positionsRepository from '@/lib/repositories/positions';
 import { saveAs } from 'file-saver';
+import { getApplicationDataForPdf } from '@/lib/repositories/applications';
+import { CandidateProfileDocument } from './candidate-profile-document';
+import { fetchImageAsDataUrl, serializePlain } from '@/lib/utils';
 
-export async function exportCandidateProfilePdfByApplicationId(applicationId: string): Promise<void> {
+export const exportCandidateProfilePdfByApplicationId = async (applicationId: string) => {
   try {
-    const application = await applicationsRepository.getApplicationById(applicationId);
-    if (!application) {
-      throw new Error("Application not found.");
+    const applicationData = await getApplicationDataForPdf(applicationId);
+    if (!applicationData) {
+      throw new Error('Application data not found');
     }
-    
-    const [candidate, position] = await Promise.all([
-      candidatesRepository.getCandidateById(application.candidateId),
-      positionsRepository.getPositionById(application.positionId),
-    ]);
-  
-    if (!candidate || !position) {
-      throw new Error("Candidate or Position not found for the application.");
-    }
-  
-    const props = {
-      name: candidate.fullName,
-      role: application.appliedRoleTitle || candidate.currentTitle || '',
-      email: candidate.email,
-      linkedin: candidate.linkedinUrl,
-      compensation: application.appliedCompensation,
-      projectRole: position.title,
-      academicBackground: Array.isArray(candidate.academicBackground) 
-        ? candidate.academicBackground.join(', ') 
-        : candidate.academicBackground,
-      languages: candidate.languages,
-      professionalBackground: application.professionalBackgroundAtApply || candidate.professionalBackground,
-      mainProjects: application.mainProjectsAtApply || candidate.mainProjects,
-      hardSkills: candidate.hardSkills,
-      phone: candidate.phone,
-      photoUrl: candidate.photoUrl,
-    };
-  
-    const blob = await pdf(<CandidateProfileDocument {...props} />).toBlob();
-    
-    saveAs(blob, `Candidate Profile ${candidate.fullName}.pdf`);
 
+    const plainApplicationData = serializePlain(applicationData);
+    const { candidate, position } = plainApplicationData;
+
+    const photoDataUrl = candidate.photoURL ? await fetchImageAsDataUrl(candidate.photoURL) : null;
+
+    const doc = (
+      <CandidateProfileDocument
+        name={candidate.name}
+        role={candidate.role}
+        email={candidate.email}
+        phone={candidate.phone}
+        linkedin={candidate.linkedin}
+        projectRole={position.name} 
+        compensation={candidate.compensation}
+        academicBackground={candidate.academicBackground}
+        languages={candidate.languages}
+        professionalBackground={candidate.professionalBackground}
+        mainProjects={candidate.mainProjects}
+        hardSkills={candidate.hardSkills}
+        photoDataUrl={photoDataUrl}
+      />
+    );
+
+    const blob = await pdf(doc).toBlob();
+    saveAs(blob, `candidate-profile-${candidate.name.replace(/\s/g, '_')}.pdf`);
   } catch (error) {
-    console.error("Failed to export PDF:", error);
-    alert("Could not export the PDF. Please check the console for details.");
+    console.error('Failed to export candidate PDF:', error);
+    throw new Error('An unexpected error occurred while exporting the PDF.');
   }
-}
+};

@@ -204,9 +204,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   loadCandidates: async () => {
-    if (get().candidatesInitialized || get().candidatesLoading) {
-      return;
-    }
+    if (get().candidatesLoading) return;
+    if (get().candidatesInitialized && get().candidates && get().candidates.length > 0) return;
     set({ candidatesLoading: true });
     try {
       const candidates = await candidatesRepository.getAllCandidates();

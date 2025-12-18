@@ -1,7 +1,7 @@
 import React from 'react';
 import { Document, Page, View, Text, StyleSheet, Font, Svg, Path } from '@react-pdf/renderer';
 import { FunnelMetrics } from '../types';
-import { CandidateProfilePage } from './candidate-profile-document';
+import { CandidateProfileDocument } from './candidate-profile-document';
 
 Font.registerHyphenationCallback((word) => [word]);
 
@@ -24,141 +24,112 @@ export interface PositionReportData {
     professionalBackground?: string;
     mainProjects?: string[] | string;
     hardSkills?: string[] | string;
-    photoUrl?: string;
+    photoDataUrl?: string | null;
   }[];
 }
 
 const styles = StyleSheet.create({
-  page: {
-    padding: 40,
-    fontFamily: 'Helvetica',
-    fontSize: 10,
-    color: '#333',
-  },
-  header: {
-    marginBottom: 20,
-    textAlign: 'center',
-    borderBottom: '1 solid #EEE',
-    paddingBottom: 10,
-  },
-  clientName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#111',
-    marginBottom: 2,
-  },
-  positionTitle: {
-    fontSize: 16,
-    color: '#555',
-  },
-  reportDate: {
-    fontSize: 10,
-    color: '#777',
-    marginTop: 4,
-  },
-  funnelContainer: {
-    border: '1 solid #EEE',
-    borderRadius: 8,
-    padding: 20,
-    marginBottom: 20,
-    backgroundColor: '#F9F9F9'
-  },
-  funnelTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginBottom: 15,
-    textAlign: 'center',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    color: '#444'
-  },
-  metricsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  metricItem: {
-    width: '30%',
-    backgroundColor: '#FFF',
-    padding: 12,
-    borderRadius: 6,
-    marginBottom: 10,
-    border: '1 solid #EAEAEA',
-    alignItems: 'center',
-  },
-  metricValue: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  metricLabel: {
-    fontSize: 9,
-    color: '#666',
-    marginTop: 2,
-    textAlign: 'center',
-  },
-  chartContainer: {
-    marginTop: 10,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#111',
-    paddingBottom: 5,
-    borderBottom: '2 solid #333',
-    marginBottom: 15,
-    marginTop: 10,
-  },
+    page: {
+        padding: 40,
+        fontFamily: 'Helvetica',
+        backgroundColor: '#FFFFFF',
+    },
+    header: {
+        marginBottom: 20,
+        textAlign: 'center',
+    },
+    clientName: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#1E40AF',
+    },
+    positionTitle: {
+        fontSize: 18,
+        color: '#4B5563',
+    },
+    reportDate: {
+        fontSize: 12,
+        color: '#6B7280',
+        marginTop: 4,
+    },
+    funnelContainer: {
+        border: '1px solid #E5E7EB',
+        borderRadius: 8,
+        padding: 20,
+        marginBottom: 20,
+    },
+    funnelTitle: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginBottom: 15,
+        textAlign: 'center',
+    },
+    metricsGrid: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        marginBottom: 20,
+    },
+    metricItem: {
+        textAlign: 'center',
+    },
+    metricValue: {
+        fontSize: 20,
+        fontWeight: 'bold',
+    },
+    metricLabel: {
+        fontSize: 10,
+        color: '#6B7280',
+    },
+    chartContainer: {
+        alignItems: 'center',
+    },
+    sectionTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 10,
+        borderBottom: '1px solid #E5E7EB',
+        paddingBottom: 5,
+    },
 });
 
-const metricDisplayConfig: { [K in keyof FunnelMetrics]: { label: string } } = {
-  sourced: { label: 'Sourced' },
-  approached: { label: 'Approached' },
-  notInterested: { label: 'Not Interested' },
-  noResponse: { label: 'No Response' },
-  activePipeline: { label: 'Active Pipeline' },
-  shortlisted: { label: 'Shortlisted' },
-  finalInterviews: { label: 'Final Interviews' },
+const metricDisplayConfig = {
+    shortlist: { label: 'Shortlisted' },
+    firstInterview: { label: '1st Interview' },
+    secondInterview: { label: '2nd Interview' },
+    offer: { label: 'Offer' },
+    hired: { label: 'Hired' },
 };
 
 const FunnelChart = ({ metrics }: { metrics: FunnelMetrics }) => {
-  const total = metrics.sourced;
-  if (total === 0) return null;
+    const stageKeys = Object.keys(metricDisplayConfig) as (keyof FunnelMetrics)[];
+    const total = Math.max(...stageKeys.map(key => metrics[key] || 0));
+    const barWidth = 400;
 
-  const stages = [
-    { label: 'Sourced', value: metrics.sourced, color: '#8884d8' },
-    { label: 'Approached', value: metrics.approached, color: '#82ca9d' },
-    { label: 'Active Pipeline', value: metrics.activePipeline, color: '#ffc658' },
-    { label: 'Shortlisted', value: metrics.shortlisted, color: '#ff8042' },
-    { label: 'Final Interviews', value: metrics.finalInterviews, color: '#00C49F' },
-  ];
-
-  const maxBarWidth = 100;
-
-  return (
-    <View style={{ width: '100%' }}>
-      {stages.map((stage, index) => {
-        const barWidth = total > 0 ? (stage.value / total) * maxBarWidth : 0;
-        return (
-          <View key={index} style={{ marginBottom: 8 }}>
-            <Text style={{ fontSize: 9, color: '#555', marginBottom: 2 }}>{stage.label} ({stage.value})</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <View style={{ width: `${barWidth}%`, backgroundColor: stage.color, height: 12, borderRadius: 3 }} />
-            </View>
-          </View>
-        );
-      })}
-    </View>
-  );
+    return (
+        <View style={{ width: barWidth }}>
+            {stageKeys.map((key) => {
+                const value = metrics[key] || 0;
+                const width = total > 0 ? (value / total) * barWidth : 0;
+                return (
+                    <View key={key} style={{ marginBottom: 10 }}>
+                        <Text style={{ fontSize: 10, marginBottom: 2 }}>{metricDisplayConfig[key].label} ({value})</Text>
+                        <View style={{ width: barWidth, height: 15, backgroundColor: '#E5E7EB', borderRadius: 4 }}>
+                            <View style={{ width, height: 15, backgroundColor: '#3B82F6', borderRadius: 4 }} />
+                        </View>
+                    </View>
+                );
+            })}
+        </View>
+    );
 };
 
-export const PositionReportDocument = ({ data }: { data: PositionReportData }) => (
+export const PositionReportDocument = ({ clientName, positionTitle, reportDate, funnelMetrics, candidates }: PositionReportData) => (
   <Document>
     <Page style={styles.page} size="A4">
       <View style={styles.header}>
-        <Text style={styles.clientName}>{data.clientName}</Text>
-        <Text style={styles.positionTitle}>{data.positionTitle}</Text>
-        <Text style={styles.reportDate}>Report Date: {data.reportDate}</Text>
+        <Text style={styles.clientName}>{clientName}</Text>
+        <Text style={styles.positionTitle}>{positionTitle}</Text>
+        <Text style={styles.reportDate}>Report Date: {reportDate}</Text>
       </View>
 
       <View style={styles.funnelContainer}>
@@ -166,7 +137,7 @@ export const PositionReportDocument = ({ data }: { data: PositionReportData }) =
         
         <View style={styles.metricsGrid}>
           {Object.entries(metricDisplayConfig).map(([key, { label }]) => {
-            const value = data.funnelMetrics[key as keyof FunnelMetrics];
+            const value = funnelMetrics[key as keyof FunnelMetrics];
             if (value === undefined) return null;
             return (
               <View key={key} style={styles.metricItem}>
@@ -178,7 +149,7 @@ export const PositionReportDocument = ({ data }: { data: PositionReportData }) =
         </View>
 
         <View style={styles.chartContainer}>
-          <FunnelChart metrics={data.funnelMetrics} />
+          <FunnelChart metrics={funnelMetrics} />
         </View>
       </View>
 
@@ -187,8 +158,8 @@ export const PositionReportDocument = ({ data }: { data: PositionReportData }) =
       </View>
     </Page>
 
-    {data.candidates.map((candidate, index) => (
-      <CandidateProfilePage key={candidate.id} candidate={candidate} pageNumber={index + 2} />
+    {candidates.map((candidate, index) => (
+      <CandidateProfileDocument key={candidate.id} {...candidate} pageNumber={index + 2} />
     ))}
   </Document>
 );

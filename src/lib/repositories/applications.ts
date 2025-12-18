@@ -1,8 +1,25 @@
 import { doc, collection, query, where, getDocs, addDoc, updateDoc, serverTimestamp, Timestamp, getDoc, limit, orderBy } from "firebase/firestore";
 import { db } from "../firebase";
-import { Application } from "../types";
+import { Application, Candidate, Position } from "../types";
+import { getCandidateById } from './candidates';
+import { getPositionById } from './positions';
 
 type ApplicationDoc = Omit<Application, 'id'>;
+
+/**
+ * Removes joined properties from an application object to ensure only the
+ * application data is returned.
+ * @param app The application object.
+ * @returns The application object without joined data.
+ */
+function stripApplicationJoins<T>(app: T): T {
+    if (app && typeof app === 'object') {
+        delete (app as any).candidate;
+        delete (app as any).position;
+        delete (app as any).client;
+    }
+    return app;
+}
 
 const applicationsCollection = collection(db, "applications");
 
@@ -28,11 +45,28 @@ export async function getApplicationById(applicationId: string): Promise<Applica
   const docSnap = await getDoc(docRef);
 
   if (docSnap.exists()) {
-    return applicationFromDoc(docSnap);
+    return stripApplicationJoins(applicationFromDoc(docSnap));
   } else {
     return null;
   }
 }
+
+export async function getApplicationDataForPdf(applicationId: string): Promise<{ application: Application, candidate: Candidate, position: Position } | null> {
+    const application = await getApplicationById(applicationId);
+    if (!application) return null;
+
+    const [candidate, position] = await Promise.all([
+        getCandidateById(application.candidateId),
+        getPositionById(application.positionId)
+    ]);
+
+    if (!candidate || !position) {
+        return null;
+    }
+
+    return { application, candidate, position };
+}
+
 
 export async function findApplicationByCandidateAndPosition(candidateId: string, positionId: string): Promise<Application | null> {
     const q = query(
@@ -43,7 +77,7 @@ export async function findApplicationByCandidateAndPosition(candidateId: string,
     );
     const querySnapshot = await getDocs(q);
     if (!querySnapshot.empty) {
-        return applicationFromDoc(querySnapshot.docs[0]);
+        return stripApplicationJoins(applicationFromDoc(querySnapshot.docs[0]));
     }
     return null;
 }
@@ -51,13 +85,13 @@ export async function findApplicationByCandidateAndPosition(candidateId: string,
 export async function getApplicationsByPositionId(positionId: string): Promise<Application[]> {
   const q = query(applicationsCollection, where("positionId", "==", positionId));
   const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(applicationFromDoc);
+  return querySnapshot.docs.map(doc => stripApplicationJoins(applicationFromDoc(doc)));
 }
 
 export async function getApplicationsByCandidateId(candidateId: string): Promise<Application[]> {
   const q = query(applicationsCollection, where("candidateId", "==", candidateId));
   const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(applicationFromDoc);
+  return querySnapshot.docs.map(doc => stripApplicationJoins(applicationFromDoc(doc)));
 }
 
 export async function getLatestApplicationByCandidateId(candidateId: string): Promise<Application | null> {
@@ -69,7 +103,7 @@ export async function getLatestApplicationByCandidateId(candidateId: string): Pr
     );
     const querySnapshot = await getDocs(q);
     if (!querySnapshot.empty) {
-        return applicationFromDoc(querySnapshot.docs[0]);
+        return stripApplicationJoins(applicationFromDoc(querySnapshot.docs[0]));
     }
     return null;
 }
@@ -90,7 +124,7 @@ export async function getApplicationsByCandidateIds(candidateIds: string[]): Pro
         const q = query(applicationsCollection, where("candidateId", "in", chunk));
         const querySnapshot = await getDocs(q);
         querySnapshot.forEach(doc => {
-            applications.push(applicationFromDoc(doc));
+            applications.push(stripApplicationJoins(applicationFromDoc(doc)));
         });
     }
 
@@ -106,7 +140,7 @@ async function createApplication(applicationData: Omit<Application, "id" | "appl
   };
   const docRef = await addDoc(applicationsCollection, dataToCreate);
   const docSnap = await getDoc(docRef);
-  return applicationFromDoc(docSnap);
+  return stripApplicationJoins(applicationFromDoc(docSnap));
 }
 
 export async function createOrGetApplication(applicationData: Omit<Application, "id" | "appliedDate" | "updatedAt">): Promise<{ application: Application; created: boolean }> {
@@ -126,5 +160,13 @@ export async function updateApplication(applicationId: string, patch: Partial<Om
     ...patch,
     updatedAt: serverTimestamp(),
   };
-  await updateDoc(applicationDocRef, dataToToUpdate);
+  await updateDoc(applicationDocRef, dataToUpdate);
+}
+
+export async function updateApplicationStageKey(applicationId: string, stageKey: string): Promise<void> {
+    const applicationDocRef = doc(applicationsCollection, applicationId);
+    await updateDoc(applicationDocRef, {
+        stageKey,
+        updatedAt: serverTimestamp(),
+    });
 }

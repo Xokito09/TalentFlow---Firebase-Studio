@@ -1,3 +1,4 @@
+"use client";
 import React from 'react';
 import { pdf } from '@react-pdf/renderer';
 import { saveAs } from 'file-saver';
@@ -8,6 +9,7 @@ import { getApplicationsByPositionId } from '../repositories/applications';
 import { getCandidateById } from '../repositories/candidates';
 import { useAppStore } from '../store';
 import { DEFAULT_FUNNEL_METRICS, PipelineStageKey, Application } from '../types';
+import { fetchImageAsDataUrl } from '../utils';
 
 export async function exportPositionReportPdfByPositionId(positionId: string) {
   try {
@@ -15,52 +17,52 @@ export async function exportPositionReportPdfByPositionId(positionId: string) {
     
     let position = store.positions.find(p => p.id === positionId);
     if (!position) {
-      position = (await getPositionById(positionId)) || undefined;
+      position = await getPositionById(positionId);
+      if (position) {
+        store.addPosition(position);
+      } else {
+        throw new Error(`Position with id ${positionId} not found.`);
+      }
     }
-    if (!position) throw new Error("Position not found");
-
-    let client = store.clients.find(c => c.id === position.clientId);
-    if (!client) {
-        const allClients = await getAllClients();
-        client = allClients.find(c => c.id === position.clientId);
+    
+    let client = store.clients.find(c => c.id === position?.clientId);
+    if (!client && position?.clientId) {
+      const allClients = await getAllClients();
+      store.setClients(allClients);
+      client = allClients.find(c => c.id === position?.clientId);
     }
-    if (!client) throw new Error("Client not found");
+    
+    const applications = await getApplicationsByPositionId(positionId);
 
-    let applications = store.applicationsByPosition[positionId];
-    if (!applications) {
-      applications = await getApplicationsByPositionId(positionId);
-    }
+    const funnelMetrics = applications.reduce((metrics, app) => {
+      const stageKey = app.stageId as PipelineStageKey;
+      if (metrics.hasOwnProperty(stageKey)) {
+        metrics[stageKey]++;
+      }
+      return metrics;
+    }, { ...DEFAULT_FUNNEL_METRICS });
 
-    const relevantStages: PipelineStageKey[] = ['shortlisted', 'client_interview_1', 'client_interview_2', 'hired'];
-    const filteredApps = applications.filter(app => {
-        let stage = app.stageKey;
-        if (!stage && app.status) {
-             const mapping: { [key: string]: PipelineStageKey } = {
-                "Screening": 'shortlisted',
-                "Interview": 'client_interview_1',
-                "Hired": 'hired',
-              };
-              // @ts-ignore
-              if (mapping[app.status]) stage = mapping[app.status];
-        }
+    const relevantStages: PipelineStageKey[] = ['shortlist', 'firstInterview', 'secondInterview', 'offer', 'hired'];
+    
+    const filteredApps = applications
+      .filter(app => {
+        const stage = app.stageId as PipelineStageKey;
         return stage && relevantStages.includes(stage);
     });
 
     const stageOrder: { [key in PipelineStageKey]: number } = {
-        'shortlisted': 1,
-        'client_interview_1': 2,
-        'client_interview_2': 3,
-        'hired': 4
+        'shortlist': 1,
+        'firstInterview': 2,
+        'secondInterview': 3,
+        'offer': 4,
+        'hired': 5,
+        'new': 0,
+        'archived': 6
     };
 
     filteredApps.sort((a, b) => {
-        const stageA = a.stageKey || (a.status === 'Hired' ? 'hired' : 'shortlisted');
-        const stageB = b.stageKey || (b.status === 'Hired' ? 'hired' : 'shortlisted');
-        // @ts-ignore
-        const orderA = stageOrder[stageA] || 99;
-        // @ts-ignore
-        const orderB = stageOrder[stageB] || 99;
-
+        const orderA = stageOrder[a.stageId as PipelineStageKey] ?? 99;
+        const orderB = stageOrder[b.stageId as PipelineStageKey] ?? 99;
         if (orderA !== orderB) return orderA - orderB;
         return 0;
     });
@@ -68,65 +70,65 @@ export async function exportPositionReportPdfByPositionId(positionId: string) {
     const reportCandidates = await Promise.all(filteredApps.map(async (app) => {
         let candidateData = app.candidateSnapshot;
         
-        if (!candidateData || !candidateData.fullName) {
+        if (!candidateData || Object.keys(candidateData).length === 0) {
              const fetched = await getCandidateById(app.candidateId);
              if (fetched) {
+                 store.addCandidate(fetched);
                  candidateData = {
                      id: fetched.id,
-                     fullName: fetched.fullName,
+                     fullName: fetched.name,
+                     currentTitle: fetched.role,
                      email: fetched.email,
                      phone: fetched.phone,
-                     currentTitle: fetched.currentTitle,
-                     linkedinUrl: fetched.linkedinUrl,
-                     photoUrl: fetched.photoUrl,
-                     hardSkills: fetched.hardSkills,
-                     languages: fetched.languages,
+                     linkedinUrl: fetched.linkedin,
+                     photoUrl: fetched.photoURL,
+                     compensation: fetched.compensation,
                      academicBackground: fetched.academicBackground,
+                     languages: fetched.languages,
                      professionalBackground: fetched.professionalBackground,
                      mainProjects: fetched.mainProjects,
+                     hardSkills: fetched.hardSkills,
                  };
              }
         }
 
+        const photoDataUrl = await fetchImageAsDataUrl(candidateData?.photoUrl);
+
         return {
             id: app.id,
             name: candidateData?.fullName || "Unknown Candidate",
-            role: app.appliedRoleTitle || candidateData?.currentTitle || "",
-            email: candidateData?.email || "",
+            role: app.appliedRoleTitle || candidateData?.currentTitle || "N/A",
+            email: candidateData?.email || "N/A",
             phone: candidateData?.phone,
             linkedin: candidateData?.linkedinUrl,
-            projectRole: position?.title || "",
-            compensation: app.appliedCompensation,
+            projectRole: position?.title || "N/A",
+            compensation: app.appliedCompensation || candidateData?.compensation,
             academicBackground: candidateData?.academicBackground,
             languages: candidateData?.languages,
             professionalBackground: app.professionalBackgroundAtApply || candidateData?.professionalBackground,
             mainProjects: app.mainProjectsAtApply || candidateData?.mainProjects,
             hardSkills: candidateData?.hardSkills,
-            photoUrl: candidateData?.photoUrl
+            photoDataUrl: photoDataUrl
         };
     }));
 
     const today = new Date();
-    const formattedDate = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+    const reportDate = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
 
-    const reportData = {
-        clientName: client.name,
-        positionTitle: position.title,
-        reportDate: formattedDate,
-        funnelMetrics: position.funnelMetrics || DEFAULT_FUNNEL_METRICS,
-        candidates: reportCandidates
-    };
+    const doc = (
+        <PositionReportDocument
+            clientName={client?.name || "N/A"}
+            positionTitle={position?.title || "N/A"}
+            reportDate={reportDate}
+            funnelMetrics={funnelMetrics}
+            candidates={reportCandidates}
+        />
+    );
 
-    const blob = await pdf(<PositionReportDocument {...reportData} />).toBlob();
-
-    const safeClientName = client.name.replace(/[^a-z0-9]/gi, '_');
-    const safePositionTitle = position.title.replace(/[^a-z0-9]/gi, '_');
-    const filename = `${safeClientName}_${safePositionTitle}_Full_Report.pdf`;
-    
-    saveAs(blob, filename);
-
+    const blob = await pdf(doc).toBlob();
+    saveAs(blob, `position_report_${position?.title.replace(/\s/g, '_')}.pdf`);
   } catch (error) {
-    console.error("Export failed:", error);
-    throw error;
+    console.error("Failed to generate position report PDF:", error);
+    throw new Error('An unexpected error occurred while generating the PDF report.');
   }
 }

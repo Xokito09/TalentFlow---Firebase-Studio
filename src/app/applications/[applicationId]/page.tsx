@@ -1,8 +1,11 @@
-
+import { notFound } from 'next/navigation';
 import CandidateReportPage from '@/components/applications/candidate-report-page';
-import { Button } from "@/components/ui/button";
-import { FileDown } from "lucide-react";
-import { Application, Candidate, Position, Client } from '@/lib/types';
+import * as applicationsRepository from '@/lib/repositories/applications';
+import * as candidatesRepository from '@/lib/repositories/candidates';
+import * as positionsRepository from '@/lib/repositories/positions';
+import * as clientsRepository from '@/lib/repositories/clients';
+import { serializePlain } from '@/lib/utils';
+import { CandidatePdfDownloadButton } from '@/components/applications/CandidatePdfDownloadButton';
 
 type ApplicationDetailPageProps = {
   params: { applicationId: string };
@@ -10,83 +13,56 @@ type ApplicationDetailPageProps = {
 };
 
 const ApplicationCvPage = async ({ params, searchParams }: ApplicationDetailPageProps) => {
-  const applicationId = params.applicationId;
-  const from = searchParams.from as string;
-  const fromPositionId = searchParams.positionId as string;
-  const fromCandidateId = searchParams.candidateId as string;
+  const { applicationId } = params;
+  const { from, positionId: fromPositionId, candidateId: fromCandidateId } = searchParams;
 
-  let application: Application | null = null;
-  let candidate: Candidate | null = null;
-  let position: Position | null = null;
-  let client: Client | null = null;
-  let error: string | null = null;
-
-  try {
-    // Assuming fetch works with an absolute URL in a server component environment
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/applications/${applicationId}/detail`);
-
-    if (!response.ok) {
-      error = response.status === 404 ? "Application not found." : "Failed to load application data.";
-    } else {
-      const data = await response.json();
-      application = data.application;
-      candidate = data.candidate;
-      position = data.position;
-      client = data.client;
-
-      if (!application || !candidate || !position) {
-        error = "Incomplete data received from API.";
-      }
-    }
-  } catch (e) {
-    console.error(e);
-    error = "Failed to load application data due to a network error.";
+  const applicationData = await applicationsRepository.getApplicationById(applicationId);
+  if (!applicationData) {
+    notFound();
   }
 
+  const [candidate, position] = await Promise.all([
+    candidatesRepository.getCandidateById(applicationData.candidateId),
+    positionsRepository.getPositionById(applicationData.positionId)
+  ]);
 
-  if (error) {
-    return <div className="p-8 text-center text-red-500">{error}</div>;
+  if (!candidate || !position) {
+    notFound();
   }
 
-  if (!application || !candidate || !position) {
-    return <div className="p-8 text-center">Loading or incomplete data...</div>;
-  }
+  const client = position.clientId ? await clientsRepository.getClientById(position.clientId) : null;
   
-  const candidateReportProps = {
-    name: candidate.fullName,
-    role: application.appliedRoleTitle || candidate.currentTitle || '',
-    email: candidate.email,
-    linkedin: candidate.linkedinUrl,
-    compensation: application.appliedCompensation,
-    projectRole: position.title,
-    academicBackground: candidate.academicBackground?.join(', '),
-    languages: candidate.languages,
-    professionalBackground: application.professionalBackgroundAtApply || candidate.professionalBackground,
-    mainProjects: application.mainProjectsAtApply || candidate.mainProjects,
-    hardSkills: candidate.hardSkills,
-    phone: candidate.phone,
-    candidateId: candidate.id,
-    applicationId: applicationId,
-    from,
-    fromPositionId,
-    fromCandidateId,
-  };
+  const applicationPlain = serializePlain(applicationData);
+  const candidatePlain = serializePlain(candidate);
+  const positionPlain = serializePlain(position);
+  const clientPlain = serializePlain(client);
 
+  const candidateReportProps = {
+    name: candidatePlain.fullName,
+    role: applicationPlain.appliedRoleTitle || candidatePlain.currentTitle || '',
+    email: candidatePlain.email,
+    linkedin: candidatePlain.linkedinUrl,
+    compensation: applicationPlain.appliedCompensation,
+    projectRole: positionPlain.title,
+    academicBackground: candidatePlain.academicBackground?.join(', '),
+    languages: candidatePlain.languages,
+    professionalBackground: applicationPlain.professionalBackgroundAtApply || candidatePlain.professionalBackground,
+    mainProjects: applicationPlain.mainProjectsAtApply || candidatePlain.mainProjects,
+    hardSkills: candidatePlain.hardSkills,
+    phone: candidatePlain.phone,
+    candidateId: candidatePlain.id,
+    applicationId: applicationId,
+    from: from as string,
+    fromPositionId: fromPositionId as string,
+    fromCandidateId: fromCandidateId as string,
+  };
+  
   return (
     <div>
-      <div className="max-w-4xl mx-auto p-4 sm:p-8 print:hidden">
-      <Button
-          onClick={async () => {
-            "use server";
-            const { exportCandidateProfilePdfByApplicationId } = await import('@/lib/pdf/export-candidate-profile-pdf');
-            await exportCandidateProfilePdfByApplicationId(applicationId);
-          }}
-        >
-          <FileDown className="mr-2 h-4 w-4" />
-          Download PDF
-        </Button>
-      </div>
-      <CandidateReportPage {...candidateReportProps} />
+        <div className="max-w-4xl mx-auto p-4 sm:p-8 print:hidden">
+            <CandidatePdfDownloadButton applicationId={applicationId} />
+        </div>
+        <CandidateReportPage {...candidateReportProps} />
     </div>
   );
 };

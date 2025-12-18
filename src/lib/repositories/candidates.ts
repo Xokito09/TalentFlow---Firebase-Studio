@@ -22,6 +22,15 @@ export async function getCandidateById(candidateId: string): Promise<Candidate |
   return null;
 }
 
+export async function getCandidatesByIds(ids: string[]): Promise<WithId<Candidate>[]> {
+  if (ids.length === 0) {
+    return [];
+  }
+  const q = query(candidatesCollection, where('__name__', 'in', ids));
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as Omit<Candidate, "id">) }));
+}
+
 export async function getAllCandidates(limitNum: number = 200): Promise<WithId<Candidate>[]> {
   const q = query(candidatesCollection, orderBy("fullName"), limit(limitNum));
   const querySnapshot = await getDocs(q);

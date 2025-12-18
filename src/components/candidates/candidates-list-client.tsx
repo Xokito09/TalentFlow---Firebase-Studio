@@ -21,10 +21,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { MoreHorizontal, PlusCircle, FileDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { exportCandidatePdf } from '@/lib/utils';
+import { exportCandidateProfilePdfByApplicationId } from '@/lib/pdf/export-candidate-profile-pdf';
 import * as applicationsRepository from '@/lib/repositories/applications';
 import EditCandidateModal from "@/components/candidates/edit-candidate-modal";
 import { Candidate } from '@/lib/types';
+import { useToast } from "@/hooks/use-toast";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -40,6 +41,7 @@ export default function CandidatesListClient({
   initialCurrentPage,
 }: CandidatesListProps) {
   const router = useRouter();
+  const { toast } = useToast();
   const [currentPage, setCurrentPage] = useState(initialCurrentPage);
   const [candidates, setCandidates] = useState(initialCandidates);
   const [totalPages, setTotalPages] = useState(initialTotalPages);
@@ -125,8 +127,34 @@ export default function CandidatesListClient({
     };
   }, [pageCandidateIdsKey]);
 
-  const handleExport = (candidateId: string) => {
-    exportCandidatePdf(candidateId);
+  const handleExport = async (candidateId: string) => {
+    toast({ title: "Exporting PDF...", description: "Please wait while the document is generated." });
+    try {
+      const latestApplication = await applicationsRepository.getLatestApplicationByCandidateId(candidateId);
+
+      if (!latestApplication) {
+        toast({
+          title: "Export Failed",
+          description: "This candidate doesn't have any applications to export.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      await exportCandidateProfilePdfByApplicationId(latestApplication.id);
+
+      toast({
+        title: "Success!",
+        description: "Candidate profile has been exported.",
+      });
+    } catch (error) {
+      console.error("Failed to export candidate PDF:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while exporting the PDF.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleEditCandidate = (candidateId: string) => {

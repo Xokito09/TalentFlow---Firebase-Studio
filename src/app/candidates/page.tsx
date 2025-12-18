@@ -1,40 +1,34 @@
 import '@/lib/firebase/admin'; // Initialize Firebase Admin SDK
-import { type WithId, type Candidate } from '@/lib/types';
+import { getPaginatedCandidates } from '@/lib/repositories/candidates';
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import CandidatesListClient from "@/components/candidates/candidates-list-client";
-import { getPaginatedCandidates } from '@/lib/repositories/candidates';
+import { serializePlain } from '@/lib/utils';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 const CANDIDATES_LIMIT = 10;
 
 async function getInitialData() {
   try {
-    const { candidates, nextCursor } = await getPaginatedCandidates({ limit: CANDIDATES_LIMIT });
-
-    const totalCandidates = (await getDocs(collection(db, 'candidates'))).size;
+    const { candidates } = await getPaginatedCandidates({ limit: CANDIDATES_LIMIT });
+    
+    // For pagination, we need a total count.
+    const totalCandidatesSnapshot = await getDocs(collection(db, 'candidates'));
+    const totalCandidates = totalCandidatesSnapshot.size;
     const totalPages = Math.ceil(totalCandidates / CANDIDATES_LIMIT);
     
-    // Convert Timestamps to ISO strings for client component serialization
-    const serializableCandidates = candidates.map(c => ({
-      ...c,
-      createdAt: c.createdAt?.toDate().toISOString(),
-      updatedAt: c.updatedAt?.toDate().toISOString(),
-    })) as WithId<Candidate>[];
-
-    return { candidates: serializableCandidates, nextCursor, totalPages, currentPage: 1 };
+    return { candidates, totalPages, currentPage: 1 };
   } catch (error) {
     console.error('Error fetching initial candidates for server render:', error);
-    return { candidates: [], nextCursor: undefined, totalPages: 1, currentPage: 1 };
+    return { candidates: [], totalPages: 1, currentPage: 1 };
   }
 }
 
-// Re-import `collection` and `getDocs` as they are used in `getInitialData`
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-
 export default async function CandidatesPage() {
   const { candidates, totalPages, currentPage } = await getInitialData();
+  const candidatesPlain = serializePlain(candidates);
 
   return (
     <>
@@ -48,7 +42,7 @@ export default async function CandidatesPage() {
         </Button>
       </PageHeader>
       <CandidatesListClient
-        initialCandidates={candidates}
+        initialCandidates={candidatesPlain}
         initialTotalPages={totalPages}
         initialCurrentPage={currentPage}
       />

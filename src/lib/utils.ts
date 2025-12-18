@@ -1,72 +1,121 @@
-import { clsx, type ClassValue } from "clsx"
+import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
-import { Timestamp } from "firebase/firestore";
-import * as applicationsRepository from '@/lib/repositories/applications';
+import { Timestamp } from 'firebase/firestore';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export async function exportCandidatePdf(candidateId: string) {
-  console.log(`Requesting PDF export for candidate: ${candidateId}`);
-  
-  try {
-    const latestApplication = await applicationsRepository.getLatestApplicationByCandidateId(candidateId);
-    
-    if (latestApplication) {
-      // Dynamically import the PDF exporter to keep the main bundle small
-      const { exportCandidateProfilePdfByApplicationId } = await import("@/lib/pdf/export-candidate-profile-pdf");
-      await exportCandidateProfilePdfByApplicationId(latestApplication.id);
-    } else {
-      alert("This candidate has no applications to export.");
+export function getInitials(name: string) {
+  if (!name) return "";
+  const parts = name.split(" ");
+  let initials = "";
+  for (let i = 0; i < parts.length; i++) {
+    if (parts[i].length > 0 && parts[i] !== "") {
+      initials += parts[i][0];
     }
+  }
+  return initials.toUpperCase();
+}
+
+export async function fetchImageAsDataUrl(url: string | null | undefined): Promise<string | null> {
+  if (!url) {
+    return null;
+  }
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000); 
+
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      console.error(`Failed to fetch image: ${response.status} ${response.statusText}`);
+      return null;
+    }
+
+    const blob = await response.blob();
+    
+    if (!blob.type.startsWith('image/')) {
+        console.error(`Fetched content is not an image: ${blob.type}`);
+        return null;
+    }
+
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string') {
+          resolve(reader.result);
+        } else {
+          console.error("Failed to read blob as Data URL");
+          resolve(null);
+        }
+      };
+      reader.onerror = () => {
+        console.error("FileReader error");
+        resolve(null);
+      };
+      reader.readAsDataURL(blob);
+    });
   } catch (error) {
-    console.error("Failed to export PDF:", error);
-    alert("Failed to export PDF. Please check the console for more details.");
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.error("Image fetch timed out:", url);
+    } else {
+      console.error("Failed to fetch or process image:", error);
+    }
+    return null;
   }
 }
 
-/**
- * Safely formats a Firestore Timestamp, Date object, or a string/number representation of a date.
- * Handles cases where Timestamp might be serialized as a plain object with { seconds, nanoseconds }.
- * Returns a formatted date string (e.g., "MM/DD/YYYY") or an empty string if the value is invalid.
- */
-export function formatFirestoreDate(value: any): string {
-  if (!value) {
+export const formatFirestoreDate = (date: Timestamp | Date | string | undefined | null): string => {
+    if (!date) return '';
+  
+    let dateObj: Date;
+    if (date instanceof Timestamp) {
+      dateObj = date.toDate();
+    } else if (date instanceof Date) {
+      dateObj = date;
+    } else if (typeof date === 'string') {
+      dateObj = new Date(date);
+    } else {
       return '';
-  }
+    }
+  
+    if (isNaN(dateObj.getTime())) {
+      return '';
+    }
+  
+    return dateObj.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+};
 
-  let date: Date | null = null;
-
-  if (value && typeof value.toDate === 'function') { // It's a Firestore Timestamp
-      date = value.toDate();
-  } else if (value instanceof Date) { // It's already a Date object
-      date = value;
-  } else if (typeof value === 'string' || typeof value === 'number') { // It's a string or number
-      try {
-          const parsedDate = new Date(value);
-          // Check if the created date is valid
-          if (!isNaN(parsedDate.getTime())) {
-              date = parsedDate;
-          }
-      } catch (e) {
-          console.error("Error parsing date:", e);
-          return '';
+export const serializePlain = <T>(obj: T): T => {
+    if (obj === null || typeof obj !== 'object') {
+      return obj;
+    }
+  
+    if (Array.isArray(obj)) {
+      return obj.map(serializePlain) as any;
+    }
+  
+    if (obj instanceof Timestamp) {
+      return obj.toDate().toISOString() as any;
+    }
+  
+    if (obj instanceof Date) {
+        return obj.toISOString() as any;
+    }
+  
+    const plainObj: { [key: string]: any } = {};
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        plainObj[key] = serializePlain((obj as any)[key]);
       }
-  } else if (value && typeof value === 'object' && 'seconds' in value && 'nanoseconds' in value) {
-      // It's a serialized Firestore Timestamp
-      try {
-          date = new Timestamp(value.seconds, value.nanoseconds).toDate();
-      } catch(e) {
-          console.error("Error converting serialized timestamp to date:", e);
-          return '';
-      }
-  }
-
-  if (date) {
-      // You can customize the format here if needed
-      return date.toLocaleDateString();
-  }
-
-  return '';
-}
+    }
+  
+    return plainObj as T;
+};

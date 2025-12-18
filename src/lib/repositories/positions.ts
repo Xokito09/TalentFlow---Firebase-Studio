@@ -1,6 +1,6 @@
 import { db } from '../firebase';
 import { Position, FunnelMetrics, DEFAULT_FUNNEL_METRICS } from '../types';
-import { collection, doc, getDocs, setDoc, query, where, addDoc, getDoc, updateDoc } from 'firebase/firestore';
+import { collection, doc, getDocs, query, where, addDoc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 
 // Helper function to remove undefined fields from an object (top-level only)
 const stripUndefined = (obj: any): any => {
@@ -19,7 +19,7 @@ const normalizePositionStatus = (status: string | undefined): 'open' | 'closed' 
   const lowerStatus = (status || "").toLowerCase();
   if (lowerStatus === "open") return 'open';
   if (lowerStatus === "closed") return 'closed';
-  if (lowerStatus === "on hold" || lowerStatus === "on_hold") return 'onhold';
+  if (lowerStatus === "on hold" || lowerStatus === "on_hold" || lowerStatus === "onhold") return 'onhold';
   return 'open'; // Default to open if unrecognized
 };
 
@@ -89,20 +89,21 @@ export async function createPosition(data: Omit<Position, "id">): Promise<Positi
   return { ...cleanPosition, id: docRef.id } as Position;
 }
 
-export async function updatePosition(position: Position): Promise<Position> {
-  const { id } = position;
-  const normalizedStatus = normalizePositionStatus(position.status);
+export async function updatePosition(positionId: string, patch: Partial<Omit<Position, 'id'>>): Promise<void> {
+  const positionDocRef = doc(db, 'positions', positionId);
+  const dataToUpdate: { [key: string]: any } = { ...patch };
 
-  const cleanPosition = {
-    ...position,
-    status: normalizedStatus,
-    location: position.location || "", // Default to empty string if missing
-    department: position.department || "", // Default to empty string if missing
-    // if funnelMetrics is present, it will be included, otherwise merged
-  };
+  if (patch.status) {
+    dataToUpdate.status = normalizePositionStatus(patch.status);
+  }
 
-  await setDoc(doc(db, 'positions', id), stripUndefined(cleanPosition), { merge: true });
-  return { ...position, status: normalizedStatus };
+  // Ensure undefined values are stripped before sending to Firestore
+  const cleanPatch = stripUndefined(dataToUpdate);
+
+  await updateDoc(positionDocRef, {
+    ...cleanPatch,
+    updatedAt: serverTimestamp(),
+  });
 }
 
 export async function updatePositionFunnelMetrics(positionId: string, funnelMetrics: FunnelMetrics): Promise<void> {
