@@ -146,7 +146,7 @@ const ClientDetailPage: React.FC = () => {
   };
 
   const handleSaveEdit = async () => {
-    console.log("EditClient save clicked", { editName, editLogoUrl, client });
+    console.log("EditClient save clicked", { editName, editLogoUrl, client: JSON.stringify(client, null, 2) });
     if (!client || !editName.trim()) return; // Name is required
 
     const safeLogoUrl = editLogoUrl && editLogoUrl.startsWith("data:") ? "" : (editLogoUrl || "");
@@ -171,7 +171,7 @@ const ClientDetailPage: React.FC = () => {
       await updateClient(updatedClient);
       setIsEditModalOpen(false);
     } catch (error) {
-      console.error("EditClient update error", error);
+      console.error("EditClient update error", { error: JSON.stringify(error, null, 2) });
     }
   };
 

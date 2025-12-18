@@ -2,120 +2,58 @@ import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { Timestamp } from 'firebase/firestore';
 
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function getInitials(name: string) {
-  if (!name) return "";
-  const parts = name.split(" ");
-  let initials = "";
-  for (let i = 0; i < parts.length; i++) {
-    if (parts[i].length > 0 && parts[i] !== "") {
-      initials += parts[i][0];
-    }
+export function formatFirestoreDate(timestamp: Timestamp | Date | undefined): string {
+  if (!timestamp) {
+    return 'N/A';
   }
-  return initials.toUpperCase();
+
+  const date = timestamp instanceof Timestamp ? timestamp.toDate() : timestamp;
+
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(date);
 }
 
-export async function fetchImageAsDataUrl(url: string | null | undefined): Promise<string | null> {
-  if (!url) {
-    return null;
-  }
-
+export const fetchImageAsDataUrl = async (imageUrl: string): Promise<string> => {
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000); 
-
-    const response = await fetch(url, { signal: controller.signal });
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      console.error(`Failed to fetch image: ${response.status} ${response.statusText}`);
-      return null;
-    }
-
+    const response = await fetch(imageUrl);
     const blob = await response.blob();
-    
-    if (!blob.type.startsWith('image/')) {
-        console.error(`Fetched content is not an image: ${blob.type}`);
-        return null;
-    }
-
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-          resolve(reader.result);
-        } else {
-          console.error("Failed to read blob as Data URL");
-          resolve(null);
-        }
-      };
-      reader.onerror = () => {
-        console.error("FileReader error");
-        resolve(null);
-      };
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
       reader.readAsDataURL(blob);
     });
   } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
-      console.error("Image fetch timed out:", url);
-    } else {
-      console.error("Failed to fetch or process image:", error);
-    }
-    return null;
+    console.error('Error fetching image as data URL:', error);
+    // Return a placeholder or default image data URL if fetching fails
+    return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
   }
-}
-
-export const formatFirestoreDate = (date: Timestamp | Date | string | undefined | null): string => {
-    if (!date) return '';
-  
-    let dateObj: Date;
-    if (date instanceof Timestamp) {
-      dateObj = date.toDate();
-    } else if (date instanceof Date) {
-      dateObj = date;
-    } else if (typeof date === 'string') {
-      dateObj = new Date(date);
-    } else {
-      return '';
-    }
-  
-    if (isNaN(dateObj.getTime())) {
-      return '';
-    }
-  
-    return dateObj.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
 };
 
 export const serializePlain = <T>(obj: T): T => {
-    if (obj === null || typeof obj !== 'object') {
-      return obj;
+  return JSON.parse(JSON.stringify(obj, (key, value) => {
+    // Check if the value is a Firestore Timestamp
+    if (value && typeof value === 'object' && value.seconds !== undefined && value.nanoseconds !== undefined) {
+      // Create a new Date object from the timestamp's seconds and milliseconds
+      return new Date(value.seconds * 1000 + value.nanoseconds / 1000000).toISOString();
     }
-  
-    if (Array.isArray(obj)) {
-      return obj.map(serializePlain) as any;
-    }
-  
-    if (obj instanceof Timestamp) {
-      return obj.toDate().toISOString() as any;
-    }
-  
-    if (obj instanceof Date) {
-        return obj.toISOString() as any;
-    }
-  
-    const plainObj: { [key: string]: any } = {};
-    for (const key in obj) {
-      if (Object.prototype.hasOwnProperty.call(obj, key)) {
-        plainObj[key] = serializePlain((obj as any)[key]);
-      }
-    }
-  
-    return plainObj as T;
+    return value;
+  }));
 };
+
+export function formatCurrency(amount: number, currency = 'USD') {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency,
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    }).format(amount);
+}

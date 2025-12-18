@@ -93,7 +93,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       await clientsRepository.updateClient(updatedClient);
     } catch (error) {
-      console.error("Failed to update client in Firestore", error);
+      console.error("Failed to update client in Firestore", { error: JSON.stringify(error, null, 2) });
     }
   },
   loadClients: async () => {

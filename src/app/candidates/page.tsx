@@ -1,51 +1,50 @@
-import '@/lib/firebase/admin'; // Initialize Firebase Admin SDK
-import { getPaginatedCandidates } from '@/lib/repositories/candidates';
-import { PageHeader } from "@/components/page-header";
-import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
-import CandidatesListClient from "@/components/candidates/candidates-list-client";
+import { getAllCandidates } from '@/lib/repositories/candidates';
+import { getLatestApplicationByCandidateId } from '@/lib/repositories/applications';
+import CandidatesListClient from '@/components/candidates/candidates-list-client';
+import { PageHeader } from '@/components/page-header';
 import { serializePlain } from '@/lib/utils';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-
-const CANDIDATES_LIMIT = 10;
-
-async function getInitialData() {
-  try {
-    const { candidates } = await getPaginatedCandidates({ limit: CANDIDATES_LIMIT });
-    
-    // For pagination, we need a total count.
-    const totalCandidatesSnapshot = await getDocs(collection(db, 'candidates'));
-    const totalCandidates = totalCandidatesSnapshot.size;
-    const totalPages = Math.ceil(totalCandidates / CANDIDATES_LIMIT);
-    
-    return { candidates, totalPages, currentPage: 1 };
-  } catch (error) {
-    console.error('Error fetching initial candidates for server render:', error);
-    return { candidates: [], totalPages: 1, currentPage: 1 };
-  }
-}
+import { notFound } from 'next/navigation';
 
 export default async function CandidatesPage() {
-  const { candidates, totalPages, currentPage } = await getInitialData();
-  const candidatesPlain = serializePlain(candidates);
+  try {
+    const candidates = await getAllCandidates();
 
-  return (
-    <>
-      <PageHeader
-        title="Candidates"
-        description="Manage your talent pool and candidate information."
-      >
-        <Button>
-          <PlusCircle className="mr-2" />
-          Add Candidate
-        </Button>
-      </PageHeader>
-      <CandidatesListClient
-        initialCandidates={candidatesPlain}
-        initialTotalPages={totalPages}
-        initialCurrentPage={currentPage}
-      />
-    </>
-  );
+    if (!candidates || candidates.length === 0) {
+      // If you want to show a 404 when no candidates are found,
+      // you could uncomment the following line:
+      // notFound();
+    }
+
+    const applicationsPromises = candidates.map((candidate) =>
+      getLatestApplicationByCandidateId(candidate.id)
+    );
+    const applications = await Promise.all(applicationsPromises);
+
+    const candidatesWithApplications = candidates.map((candidate, index) => ({
+      ...candidate,
+      latestApplication: applications[index] || null,
+    }));
+
+    return (
+      <>
+        <PageHeader title="Candidates" />
+        <div className="p-4 sm:p-6 lg:p-8">
+          <CandidatesListClient
+            candidates={serializePlain(candidatesWithApplications)}
+          />
+        </div>
+      </>
+    );
+  } catch (err) {
+    if ((err as any)?.digest?.includes('NEXT_NOT_FOUND')) {
+      throw err;
+    }
+    console.error(
+      'SERVER_ERROR src/app/candidates/page.tsx',
+      err instanceof Error ? { message: err.message, stack: err.stack } : err
+    );
+    return (
+      <div className="p-6 text-sm text-red-600">Server error. Check logs.</div>
+    );
+  }
 }

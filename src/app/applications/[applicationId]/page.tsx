@@ -12,26 +12,39 @@ type ApplicationDetailPageProps = {
   searchParams: { [key: string]: string | string[] | undefined };
 };
 
-const ApplicationCvPage = async ({ params, searchParams }: ApplicationDetailPageProps) => {
-  const { applicationId } = params;
-  const { from, positionId: fromPositionId, candidateId: fromCandidateId } = searchParams;
+const ApplicationCvPage = async (props: {
+  params: Promise<ApplicationDetailPageProps['params']>;
+  searchParams: Promise<ApplicationDetailPageProps['searchParams']>;
+}) => {
+  const params = await props.params;
+  const searchParams = await props.searchParams;
 
-  const applicationData = await applicationsRepository.getApplicationById(applicationId);
+  const { applicationId } = params;
+  const {
+    from,
+    positionId: fromPositionId,
+    candidateId: fromCandidateId,
+  } = searchParams;
+
+  const applicationData =
+    await applicationsRepository.getApplicationById(applicationId);
   if (!applicationData) {
     notFound();
   }
 
   const [candidate, position] = await Promise.all([
     candidatesRepository.getCandidateById(applicationData.candidateId),
-    positionsRepository.getPositionById(applicationData.positionId)
+    positionsRepository.getPositionById(applicationData.positionId),
   ]);
 
   if (!candidate || !position) {
     notFound();
   }
 
-  const client = position.clientId ? await clientsRepository.getClientById(position.clientId) : null;
-  
+  const client = position.clientId
+    ? await clientsRepository.getClientById(position.clientId)
+    : null;
+
   const applicationPlain = serializePlain(applicationData);
   const candidatePlain = serializePlain(candidate);
   const positionPlain = serializePlain(position);
@@ -46,8 +59,11 @@ const ApplicationCvPage = async ({ params, searchParams }: ApplicationDetailPage
     projectRole: positionPlain.title,
     academicBackground: candidatePlain.academicBackground?.join(', '),
     languages: candidatePlain.languages,
-    professionalBackground: applicationPlain.professionalBackgroundAtApply || candidatePlain.professionalBackground,
-    mainProjects: applicationPlain.mainProjectsAtApply || candidatePlain.mainProjects,
+    professionalBackground:
+      applicationPlain.professionalBackgroundAtApply ||
+      candidatePlain.professionalBackground,
+    mainProjects:
+      applicationPlain.mainProjectsAtApply || candidatePlain.mainProjects,
     hardSkills: candidatePlain.hardSkills,
     phone: candidatePlain.phone,
     candidateId: candidatePlain.id,
@@ -56,13 +72,13 @@ const ApplicationCvPage = async ({ params, searchParams }: ApplicationDetailPage
     fromPositionId: fromPositionId as string,
     fromCandidateId: fromCandidateId as string,
   };
-  
+
   return (
     <div>
-        <div className="max-w-4xl mx-auto p-4 sm:p-8 print:hidden">
-            <CandidatePdfDownloadButton applicationId={applicationId} />
-        </div>
-        <CandidateReportPage {...candidateReportProps} />
+      <div className="mx-auto max-w-4xl p-4 sm:p-8 print:hidden">
+        <CandidatePdfDownloadButton applicationId={applicationId} />
+      </div>
+      <CandidateReportPage {...candidateReportProps} />
     </div>
   );
 };

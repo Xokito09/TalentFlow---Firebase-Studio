@@ -59,7 +59,7 @@ const mapLegacyStatusToStageKey = (status: string): PipelineStageKey | undefined
     };
     return mapping[status];
 };
-const PipelineBoard: React.FC<PipelineBoardProps> = ({ positionId, applications, candidates }) => {
+const PipelineBoard: React.FC<PipelineBoardProps> = ({ positionId, applications, candidates = [] }) => {
     const candidatesMap = useMemo(() => {
         const map = new Map<string, Candidate>();
         candidates.forEach(c => map.set(c.id, c));

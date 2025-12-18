@@ -52,64 +52,100 @@ const mapFirestoreDocToPosition = (d: any): Position => {
 };
 
 export async function getPositionById(positionId: string): Promise<Position | null> {
-  const positionDocRef = doc(db, 'positions', positionId);
-  const positionDocSnap = await getDoc(positionDocRef);
-  if (positionDocSnap.exists()) {
-    return mapFirestoreDocToPosition(positionDocSnap);
+  try {
+    const positionDocRef = doc(db, 'positions', positionId);
+    const positionDocSnap = await getDoc(positionDocRef);
+    if (positionDocSnap.exists()) {
+      return mapFirestoreDocToPosition(positionDocSnap);
+    }
+    return null;
+  } catch (err) {
+    console.error("getPositionById failed", err);
+    const msg = err instanceof Error ? err.message : JSON.stringify(err);
+    throw new Error(`getPositionById failed :: ${msg}`);
   }
-  return null;
 }
 
 export async function getPositionsByClientId(clientId: string): Promise<Position[]> {
-  const positionsCol = collection(db, 'positions');
-  const q = query(positionsCol, where("clientId", "==", clientId));
-  const positionSnapshot = await getDocs(q);
-  return positionSnapshot.docs.map(mapFirestoreDocToPosition);
+  try {
+    const positionsCol = collection(db, 'positions');
+    const q = query(positionsCol, where("clientId", "==", clientId));
+    const positionSnapshot = await getDocs(q);
+    return positionSnapshot.docs.map(mapFirestoreDocToPosition);
+  } catch (err) {
+    console.error("getPositionsByClientId failed", err);
+    const msg = err instanceof Error ? err.message : JSON.stringify(err);
+    throw new Error(`getPositionsByClientId failed :: ${msg}`);
+  }
 }
 
 export async function getAllPositions(): Promise<Position[]> {
-  const positionsCol = collection(db, 'positions');
-  const positionSnapshot = await getDocs(positionsCol);
-  return positionSnapshot.docs.map(mapFirestoreDocToPosition);
+  try {
+    const positionsCol = collection(db, 'positions');
+    const positionSnapshot = await getDocs(positionsCol);
+    return positionSnapshot.docs.map(mapFirestoreDocToPosition);
+  } catch (err) {
+    console.error("getAllPositions failed", err);
+    const msg = err instanceof Error ? err.message : JSON.stringify(err);
+    throw new Error(`getAllPositions failed :: ${msg}`);
+  }
 }
 
 export async function createPosition(data: Omit<Position, "id">): Promise<Position> {
-  const positionsCol = collection(db, 'positions');
-  const normalizedStatus = normalizePositionStatus(data.status);
+  try {
+    const positionsCol = collection(db, 'positions');
+    const normalizedStatus = normalizePositionStatus(data.status);
 
-  const cleanPosition = {
-    ...data,
-    status: normalizedStatus,
-    location: data.location || "", // Default to empty string if missing
-    department: data.department || "", // Default to empty string if missing
-    funnelMetrics: data.funnelMetrics || DEFAULT_FUNNEL_METRICS,
-  };
+    const cleanPosition = {
+      ...data,
+      status: normalizedStatus,
+      location: data.location || "", // Default to empty string if missing
+      department: data.department || "", // Default to empty string if missing
+      funnelMetrics: data.funnelMetrics || DEFAULT_FUNNEL_METRICS,
+    };
 
-  const docRef = await addDoc(positionsCol, stripUndefined(cleanPosition));
-  return { ...cleanPosition, id: docRef.id } as Position;
+    const docRef = await addDoc(positionsCol, stripUndefined(cleanPosition));
+    return { ...cleanPosition, id: docRef.id } as Position;
+  } catch (err) {
+    console.error("createPosition failed", err);
+    const msg = err instanceof Error ? err.message : JSON.stringify(err);
+    throw new Error(`createPosition failed :: ${msg}`);
+  }
 }
 
 export async function updatePosition(positionId: string, patch: Partial<Omit<Position, 'id'>>): Promise<void> {
-  const positionDocRef = doc(db, 'positions', positionId);
-  const dataToUpdate: { [key: string]: any } = { ...patch };
+  try {
+    const positionDocRef = doc(db, 'positions', positionId);
+    const dataToUpdate: { [key: string]: any } = { ...patch };
 
-  if (patch.status) {
-    dataToUpdate.status = normalizePositionStatus(patch.status);
+    if (patch.status) {
+      dataToUpdate.status = normalizePositionStatus(patch.status);
+    }
+
+    // Ensure undefined values are stripped before sending to Firestore
+    const cleanPatch = stripUndefined(dataToUpdate);
+
+    await updateDoc(positionDocRef, {
+      ...cleanPatch,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (err) {
+    console.error("updatePosition failed", err);
+    const msg = err instanceof Error ? err.message : JSON.stringify(err);
+    throw new Error(`updatePosition failed :: ${msg}`);
   }
-
-  // Ensure undefined values are stripped before sending to Firestore
-  const cleanPatch = stripUndefined(dataToUpdate);
-
-  await updateDoc(positionDocRef, {
-    ...cleanPatch,
-    updatedAt: serverTimestamp(),
-  });
 }
 
 export async function updatePositionFunnelMetrics(positionId: string, funnelMetrics: FunnelMetrics): Promise<void> {
-  const positionDocRef = doc(db, 'positions', positionId);
-  // Only update the funnelMetrics field
-  await updateDoc(positionDocRef, {
-    funnelMetrics: funnelMetrics
-  });
+  try {
+    const positionDocRef = doc(db, 'positions', positionId);
+    // Only update the funnelMetrics field
+    await updateDoc(positionDocRef, {
+      funnelMetrics: funnelMetrics
+    });
+  } catch (err) {
+    console.error("updatePositionFunnelMetrics failed", err);
+    const msg = err instanceof Error ? err.message : JSON.stringify(err);
+    throw new Error(`updatePositionFunnelMetrics failed :: ${msg}`);
+  }
 }

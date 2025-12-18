@@ -105,3 +105,25 @@ export type Application = {
   professionalBackgroundAtApply?: string;
   mainProjectsAtApply?: string[];
 };
+
+export type CandidateProfilePdfData = {
+    name: string;
+    title?: string;
+    location?: string;
+    email?: string;
+    phone?: string;
+    linkedin?: string;
+    skills?: string[];
+    languages?: string[];
+    summary?: string;
+    professionalBackground?: string;
+    compensation?: string;
+    projectRole?: string;
+    photoDataUrl?: string | null;
+    mainProjects?: string[];
+    academicBackground?: string[];
+};
+
+export type CandidateProfilePdfProps = {
+  candidate: CandidateProfilePdfData;
+};

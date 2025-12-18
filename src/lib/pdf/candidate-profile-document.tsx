@@ -1,238 +1,228 @@
 import React from 'react';
-import { Document, Page, View, Text, Image, StyleSheet, Font, Link } from '@react-pdf/renderer';
+import { Page, Text, View, Document, StyleSheet, Link, Font } from '@react-pdf/renderer';
+import { CandidateProfilePdfProps } from '@/lib/types';
+import { formatCurrency } from '@/lib/utils';
 
-Font.registerHyphenationCallback((word) => [word]);
+const styles = StyleSheet.create({
+  page: {
+    flexDirection: 'column',
+    backgroundColor: '#FFFFFF',
+    padding: 30,
+    fontFamily: 'Helvetica',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    paddingBottom: 20,
+  },
+  headerText: {
+    flexDirection: 'column',
+  },
+  name: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    fontFamily: 'Helvetica-Bold',
+  },
+  title: {
+    fontSize: 14,
+    color: '#4B5563',
+    marginTop: 2,
+  },
+  location: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 4,
+  },
+  logo: {
+    width: 120,
+    height: 30,
+  },
+  main: {
+    flexDirection: 'row',
+    flexGrow: 1,
+  },
+  leftColumn: {
+    width: '35%',
+    paddingRight: 20,
+    borderRightWidth: 1,
+    borderRightColor: '#E5E7EB',
+  },
+  rightColumn: {
+    width: '65%',
+    paddingLeft: 20,
+  },
+  section: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    fontFamily: 'Helvetica-Bold',
+    color: '#111827',
+  },
+  text: {
+    fontSize: 10,
+    lineHeight: 1.5,
+    color: '#374151',
+  },
+  contactInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  contactText: {
+    fontSize: 10,
+    marginLeft: 6,
+    color: '#374151',
+    textDecoration: 'none',
+  },
+  skillsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 4,
+  },
+  skillBadge: {
+    backgroundColor: '#F3F4F6',
+    color: '#374151',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    fontSize: 9,
+    marginRight: 6,
+    marginBottom: 6,
+  },
+  pageNumber: {
+    position: 'absolute',
+    fontSize: 10,
+    bottom: 15,
+    left: 0,
+    right: 0,
+    textAlign: 'center',
+    color: 'grey',
+  },
+});
 
-interface CandidateProfileDocumentProps {
-  name: string;
-  role: string;
-  email: string;
-  phone?: string;
-  linkedin?: string;
-  projectRole: string;
-  compensation?: string;
-  academicBackground?: string | string[];
-  languages?: string[] | string;
-  professionalBackground?: string;
-  mainProjects?: string[] | string;
-  hardSkills?: string[] | string;
-  photoDataUrl?: string | null;
-  pageNumber?: number;
-}
-
-const normalizeToArray = (value?: string | string[]): string[] => {
-  if (Array.isArray(value)) return value;
-  if (typeof value === 'string') return value.split(/, |; | and /).map((s) => s.trim());
-  return [];
-};
-
-export const CandidateProfileDocument: React.FC<CandidateProfileDocumentProps> = (props) => {
+export const CandidateProfileDocument: React.FC<CandidateProfilePdfProps> = ({ candidate }) => {
     const {
         name,
-        role,
+        title,
+        location,
         email,
         phone,
         linkedin,
-        projectRole,
-        compensation,
-        academicBackground,
+        skills,
         languages,
+        summary,
         professionalBackground,
-        mainProjects,
-        hardSkills,
-        photoDataUrl,
-      } = props;
-    
-      const skillsList = normalizeToArray(hardSkills);
-      const academicList = normalizeToArray(academicBackground);
-      const languagesList = normalizeToArray(languages);
-      const projectsList = normalizeToArray(mainProjects);
-    
-      const formattedCompensation = (compensation || '').toLowerCase().includes('monthly')
-        ? compensation
-        : `USD ${compensation} monthly`;
-    
-      const imageSrc = photoDataUrl;
+        compensation,
+        projectRole,
+    } = candidate;
 
-  return (
-    <Page size="A4" style={styles.page}>
-        <View style={styles.container}>
-            <View style={styles.header} fixed>
-                <Text style={styles.headerText}>TalentFlow</Text>
-            </View>
+    const formattedCompensation = compensation ? formatCurrency(parseFloat(compensation)) : 'N/A';
+    const skillsList = skills || [];
+    const languagesList = languages || [];
 
-            <View style={styles.identityRow}>
-            <View style={styles.photoBox}>
-                {imageSrc && <Image src={imageSrc} style={styles.photo} />}
-            </View>
-            <View style={styles.nameAndTitle}>
-                <Text style={styles.name}>{name}</Text>
-                <Text style={styles.title}>{role}</Text>
-                <Link src={`mailto:${email}`} style={styles.link}>{email}</Link>
-                {phone && <Text style={styles.contactInfo}>{phone}</Text>}
-                {linkedin && <Link src={linkedin} style={styles.link}>{linkedin}</Link>}
-            </View>
-            </View>
-
-            <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Role</Text>
-            <Text style={styles.text}>{projectRole}</Text>
-            </View>
-
-            <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Compensation</Text>
-            <Text style={styles.text}>{formattedCompensation}</Text>
-            </View>
-
-            <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Professional Background</Text>
-            <Text style={styles.text}>{professionalBackground}</Text>
-            </View>
-
-            {academicList.length > 0 && (
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Academic Background</Text>
-                {academicList.map((item, index) => (
-                <Text key={index} style={styles.listItem}>- {item}</Text>
-                ))}
-            </View>
-            )}
-
-            {projectsList.length > 0 && (
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Main Projects</Text>
-                {projectsList.map((item, index) => (
-                <Text key={index} style={styles.listItem}>- {item}</Text>
-                ))}
-            </View>
-            )}
-
-            {skillsList.length > 0 && (
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Hard Skills</Text>
-                <View style={styles.skillsContainer}>
-                {skillsList.map((skill, index) => (
-                    <Text key={index} style={styles.skillBadge}>{skill}</Text>
-                ))}
+    return (
+        <Document>
+            <Page size="A4" style={styles.page}>
+                {/* Header */}
+                <View style={styles.header}>
+                    <View style={styles.headerText}>
+                        <Text style={styles.name}>{name}</Text>
+                        <Text style={styles.title}>{title || 'N/A'}</Text>
+                        <Text style={styles.location}>{location || 'N/A'}</Text>
+                    </View>
+                    {/* The logo is now text-based to avoid image loading issues */}
+                    <Text>TalentFlow</Text>
                 </View>
-            </View>
-            )}
 
-            {languagesList.length > 0 && (
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Languages</Text>
-                <View style={styles.skillsContainer}>
-                {languagesList.map((lang, index) => (
-                    <Text key={index} style={styles.skillBadge}>{lang}</Text>
-                ))}
+                {/* Main Content */}
+                <View style={styles.main}>
+                    {/* Left Column */}
+                    <View style={styles.leftColumn}>
+                        <View style={styles.section}>
+                            <Text style={styles.sectionTitle}>Contact</Text>
+                            {email && (
+                                <View style={styles.contactInfo}>
+                                    <Text style={styles.contactText}>{email}</Text>
+                                </View>
+                            )}
+                            {phone && (
+                                <View style={styles.contactInfo}>
+                                    <Text style={styles.contactText}>{phone}</Text>
+                                </View>
+                            )}
+                            {linkedin && (
+                                <Link src={linkedin} style={styles.contactInfo}>
+                                    <Text style={styles.contactText}>LinkedIn</Text>
+                                </Link>
+                            )}
+                        </View>
+
+                        {skillsList.length > 0 && (
+                            <View style={styles.section}>
+                                <Text style={styles.sectionTitle}>Skills</Text>
+                                <View style={styles.skillsContainer}>
+                                    {skillsList.map((skill, index) => (
+                                        <Text key={index} style={styles.skillBadge}>{skill}</Text>
+                                    ))}
+                                </View>
+                            </View>
+                        )}
+
+                        {languagesList.length > 0 && (
+                            <View style={styles.section}>
+                                <Text style={styles.sectionTitle}>Languages</Text>
+                                <View style={styles.skillsContainer}>
+                                    {languagesList.map((lang, index) => (
+                                        <Text key={index} style={styles.skillBadge}>{lang}</Text>
+                                    ))}
+                                </View>
+                            </View>
+                        )}
+                    </View>
+
+                    {/* Right Column */}
+                    <View style={styles.rightColumn}>
+                        {summary && (
+                            <View style={styles.section}>
+                                <Text style={styles.sectionTitle}>Summary</Text>
+                                <Text style={styles.text}>{summary}</Text>
+                            </View>
+                        )}
+
+                        {professionalBackground && (
+                            <View style={styles.section}>
+                                <Text style={styles.sectionTitle}>Professional Background</Text>
+                                <Text style={styles.text}>{professionalBackground}</Text>
+                            </View>
+                        )}
+
+                        <View style={{flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between'}}>
+                            <View style={[styles.section, {width: '48%'}]}>
+                                <Text style={styles.sectionTitle}>Role</Text>
+                                <Text style={styles.text}>{projectRole || 'N/A'}</Text>
+                            </View>
+
+                            <View style={[styles.section, {width: '48%'}]}>
+                                <Text style={styles.sectionTitle}>Compensation</Text>
+                                <Text style={styles.text}>{formattedCompensation}</Text>
+                            </View>
+                        </View>
+                    </View>
                 </View>
-            </View>
-            )}
-        </View>
-        <Text
-            style={styles.pageNumber}
-            render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`}
-            fixed
-        />
-    </Page>
-  );
-};
 
-
-const styles = StyleSheet.create({
-    page: {
-      padding: 30,
-      fontFamily: 'Helvetica',
-      fontSize: 11,
-      lineHeight: 1.5,
-    },
-    container: {
-      padding: 10,
-    },
-    header: {
-        marginBottom: 20,
-        textAlign: 'right'
-    },
-    headerText: {
-        fontSize: 12,
-        color: 'grey',
-    },
-    identityRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 20,
-    },
-    photoBox: {
-        width: 100,
-        height: 100,
-        marginRight: 20,
-        border: '1px solid #E5E7EB',
-        borderRadius: 4,
-        padding: 5,
-    },
-    photo: {
-        width: '100%',
-        height: '100%',
-        objectFit: 'cover',
-    },
-    nameAndTitle: {
-      flex: 1,
-    },
-    name: {
-      fontSize: 24,
-      fontWeight: 'bold',
-      marginBottom: 5,
-    },
-    title: {
-      fontSize: 16,
-      color: 'grey',
-    },
-    contactInfo: {
-        fontSize: 11,
-    },
-    link: {
-      fontSize: 11,
-      color: 'blue',
-      textDecoration: 'underline',
-    },
-    section: {
-      marginBottom: 15,
-    },
-    sectionTitle: {
-      fontSize: 14,
-      fontWeight: 'bold',
-      marginBottom: 5,
-      borderBottom: '1px solid #E5E7EB',
-      paddingBottom: 2,
-    },
-    text: {
-      fontSize: 11,
-      textAlign: 'justify'
-    },
-    listItem: {
-      fontSize: 11,
-      marginBottom: 3,
-    },
-    skillsContainer: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-    },
-    skillBadge: {
-      backgroundColor: '#E5E7EB',
-      color: '#374151',
-      padding: '3px 8px',
-      borderRadius: 4,
-      marginRight: 5,
-      marginBottom: 5,
-      fontSize: 10,
-    },
-    pageNumber: {
-        position: 'absolute',
-        fontSize: 10,
-        bottom: 10,
-        left: 0,
-        right: 0,
-        textAlign: 'center',
-        color: 'grey',
-      },
-  });
+                <Text
+                    style={styles.pageNumber}
+                    render={({ pageNumber, totalPages }) => pageNumber + ' / ' + totalPages}
+                    fixed
+                />
+            </Page>
+        </Document>
+      );
+    };

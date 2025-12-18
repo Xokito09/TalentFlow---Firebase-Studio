@@ -4,6 +4,7 @@ import { saveAs } from 'file-saver';
 import { getApplicationDataForPdf } from '@/lib/repositories/applications';
 import { CandidateProfileDocument } from './candidate-profile-document';
 import { fetchImageAsDataUrl, serializePlain } from '@/lib/utils';
+import { CandidateProfilePdfData } from '@/lib/types';
 
 export const exportCandidateProfilePdfByApplicationId = async (applicationId: string) => {
   try {
@@ -13,30 +14,41 @@ export const exportCandidateProfilePdfByApplicationId = async (applicationId: st
     }
 
     const plainApplicationData = serializePlain(applicationData);
-    const { candidate, position } = plainApplicationData;
+    const { application, candidate, position } = plainApplicationData;
 
-    const photoDataUrl = candidate.photoURL ? await fetchImageAsDataUrl(candidate.photoURL) : null;
+    let photoDataUrl = null;
+    if (candidate.photoUrl) {
+      try {
+        photoDataUrl = await fetchImageAsDataUrl(candidate.photoUrl);
+      } catch (error) {
+        console.warn(
+          `Failed to fetch candidate photo from ${candidate.photoUrl}. Proceeding without it.`,
+          error
+        );
+      }
+    }
 
-    const doc = (
-      <CandidateProfileDocument
-        name={candidate.name}
-        role={candidate.role}
-        email={candidate.email}
-        phone={candidate.phone}
-        linkedin={candidate.linkedin}
-        projectRole={position.name} 
-        compensation={candidate.compensation}
-        academicBackground={candidate.academicBackground}
-        languages={candidate.languages}
-        professionalBackground={candidate.professionalBackground}
-        mainProjects={candidate.mainProjects}
-        hardSkills={candidate.hardSkills}
-        photoDataUrl={photoDataUrl}
-      />
-    );
+    const pdfData: CandidateProfilePdfData = {
+      name: candidate.fullName,
+      title: application.appliedRoleTitle || candidate.currentTitle,
+      email: candidate.email,
+      phone: candidate.phone,
+      linkedin: candidate.linkedinUrl,
+      projectRole: position.title,
+      compensation: application.appliedCompensation,
+      academicBackground: candidate.academicBackground,
+      languages: candidate.languages,
+      professionalBackground:
+        application.professionalBackgroundAtApply || candidate.professionalBackground,
+      mainProjects: application.mainProjectsAtApply || candidate.mainProjects,
+      skills: candidate.hardSkills,
+      photoDataUrl: photoDataUrl,
+    };
 
+    const doc = <CandidateProfileDocument candidate={pdfData} />;
     const blob = await pdf(doc).toBlob();
-    saveAs(blob, `candidate-profile-${candidate.name.replace(/\s/g, '_')}.pdf`);
+    const safeName = candidate.fullName ? candidate.fullName.replace(/\s/g, '_') : 'candidate';
+    saveAs(blob, `candidate-profile-${safeName}.pdf`);
   } catch (error) {
     console.error('Failed to export candidate PDF:', error);
     throw new Error('An unexpected error occurred while exporting the PDF.');

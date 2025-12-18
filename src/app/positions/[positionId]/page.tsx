@@ -1,32 +1,12 @@
-import { getPositionById } from "@/lib/repositories/positions";
-import { getApplicationsByPositionId } from "@/lib/repositories/applications";
-import { getCandidatesByIds } from "@/lib/repositories/candidates";
-import { getClientById } from "@/lib/repositories/clients";
-import PositionDetailClient from "./client-page";
-import { Timestamp } from "firebase/firestore";
-
-// Helper function to serialize Firestore Timestamps
-function serializeTimestamps(data: any): any {
-  if (data === null || data === undefined || typeof data !== 'object') {
-    return data;
-  }
-  if (data instanceof Timestamp) {
-    return data.toDate().toISOString();
-  }
-  if (Array.isArray(data)) {
-    return data.map(serializeTimestamps);
-  }
-  const serializedData: { [key: string]: any } = {};
-  for (const key in data) {
-    if (Object.prototype.hasOwnProperty.call(data, key)) {
-      serializedData[key] = serializeTimestamps(data[key]);
-    }
-  }
-  return serializedData;
-}
-
-
-export const dynamic = "force-dynamic";
+import PipelineBoard from '@/components/positions/pipeline-board';
+import { notFound } from 'next/navigation';
+import { getPositionById } from '@/lib/repositories/positions';
+import { getClientById } from '@/lib/repositories/clients';
+import { getApplicationsByPositionId } from '@/lib/repositories/applications';
+import { getCandidatesByIds } from '@/lib/repositories/candidates';
+import { serializePlain } from '@/lib/utils';
+import { PageHeader } from '@/components/page-header';
+import PositionHeaderActions from '@/components/positions/PositionHeaderActions';
 
 type PositionDetailPageProps = {
   params: {
@@ -37,34 +17,53 @@ type PositionDetailPageProps = {
 export default async function PositionDetailPage({
   params,
 }: {
-  params: Promise<PositionDetailPageProps["params"]>;
+  params: Promise<PositionDetailPageProps['params']>;
 }) {
   const { positionId } = await params;
-  
+
   const position = await getPositionById(positionId);
   if (!position) {
-    return <div>Position not found</div>;
+    notFound();
   }
 
   // Fetch all data in the server component
-  const client = position.clientId ? await getClientById(position.clientId) : null;
+  const client = position.clientId
+    ? await getClientById(position.clientId)
+    : null;
   const applications = await getApplicationsByPositionId(positionId);
-  const candidateIds = [...new Set(applications.map(app => app.candidateId))];
-  const candidates = candidateIds.length > 0 ? await getCandidatesByIds(candidateIds) : [];
+  const candidateIds = [...new Set(applications.map((app) => app.candidateId))];
+  const candidates =
+    candidateIds.length > 0 ? await getCandidatesByIds(candidateIds) : [];
 
-  // Serialize the data before passing it to the client component
-  const serializablePosition = serializeTimestamps(position);
-  const serializableClient = serializeTimestamps(client);
-  const serializableApplications = serializeTimestamps(applications);
-  const serializableCandidates = serializeTimestamps(candidates);
+  const applicationsPlain = serializePlain(applications);
+  const candidatesPlain = serializePlain(candidates);
 
-  // Pass all data to the client component
+  // Create a map for easy lookup
+  const candidatesById = new Map(
+    candidatesPlain.map((candidate) => [candidate.id, candidate])
+  );
+
+  const applicationsWithCandidates = applicationsPlain
+    .map((app) => ({
+      ...app,
+      candidate: candidatesById.get(app.candidateId),
+    }))
+    .filter((app) => !!app.candidate); // Ensure we don't pass applications with missing candidates
+
   return (
-    <PositionDetailClient 
-      position={serializablePosition}
-      client={serializableClient}
-      applications={serializableApplications}
-      candidates={serializableCandidates}
-    />
+    <>
+      <PageHeader
+        title={position.title}
+        description={client?.name || 'Internal Position'}
+      >
+        <PositionHeaderActions position={serializePlain(position)} />
+      </PageHeader>
+      <div className="p-4 sm:p-6 lg:p-8">
+        <PipelineBoard
+          applications={applicationsWithCandidates}
+          position={serializePlain(position)}
+        />
+      </div>
+    </>
   );
 }

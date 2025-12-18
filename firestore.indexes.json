@@ -1,0 +1,18 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "applications",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "candidateId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "appliedDate",
+          "order": "DESCENDING"
+        }
+      ]
+    }
+  ]
+}

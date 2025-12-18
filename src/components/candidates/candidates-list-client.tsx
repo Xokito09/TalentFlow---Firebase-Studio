@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React from "react";
 import { useRouter } from 'next/navigation';
 import {
   Table,
@@ -30,62 +30,41 @@ import { useToast } from "@/hooks/use-toast";
 const ITEMS_PER_PAGE = 10;
 
 interface CandidatesListProps {
-  initialCandidates: Candidate[];
-  initialTotalPages: number;
-  initialCurrentPage: number;
+  candidates: Candidate[];
 }
 
 export default function CandidatesListClient({
-  initialCandidates,
-  initialTotalPages,
-  initialCurrentPage,
+  candidates,
 }: CandidatesListProps) {
   const router = useRouter();
   const { toast } = useToast();
-  const [currentPage, setCurrentPage] = useState(initialCurrentPage);
-  const [candidates, setCandidates] = useState(initialCandidates);
-  const [totalPages, setTotalPages] = useState(initialTotalPages);
-  const [loading, setLoading] = useState(false);
-  const [applicationCounts, setApplicationCounts] = useState<Record<string, number>>({});
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const [applicationCounts, setApplicationCounts] = React.useState<Record<string, number>>({});
   
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [candidateIdToEdit, setCandidateIdToEdit] = useState<string | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
+  const [candidateIdToEdit, setCandidateIdToEdit] = React.useState<string | null>(null);
 
-  const countsCacheRef = useRef<Record<string, number>>({});
+  const countsCacheRef = React.useRef<Record<string, number>>({});
+  
+  const totalPages = Math.ceil((candidates?.length || 0) / ITEMS_PER_PAGE);
 
-  const fetchCandidates = async (page: number) => {
-    setLoading(true);
-    try {
-      const response = await fetch(`/api/candidates/list?page=${page}&limit=${ITEMS_PER_PAGE}`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch candidates");
-      }
-      const data = await response.json();
-      setCandidates(data.candidates);
-    } catch (error) {
-      console.error("Error fetching candidates:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const paginatedCandidates = React.useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return candidates?.slice(startIndex, endIndex) || [];
+  }, [candidates, currentPage]);
 
-  useEffect(() => {
-    if (currentPage !== initialCurrentPage) {
-      fetchCandidates(currentPage);
-    }
-  }, [currentPage, initialCurrentPage]);
-
-  const pageCandidateIds = useMemo(
-    () => candidates.map(c => c.id).filter(Boolean),
-    [candidates]
+  const pageCandidateIds = React.useMemo(
+    () => paginatedCandidates.map(c => c.id).filter(Boolean),
+    [paginatedCandidates]
   );
 
-  const pageCandidateIdsKey = useMemo(
+  const pageCandidateIdsKey = React.useMemo(
     () => pageCandidateIds.join(","),
     [pageCandidateIds]
   );
 
-  useEffect(() => {
+  React.useEffect(() => {
     let cancelled = false;
 
     const fetchApplicationCounts = async () => {
@@ -193,21 +172,14 @@ export default function CandidatesListClient({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {loading && (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-gray-500">
-                    Loading candidates...
-                  </TableCell>
-                </TableRow>
-              )}
-              {!loading && candidates.length === 0 && (
+              {paginatedCandidates.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center py-8 text-gray-500">
                     No candidates found.
                   </TableCell>
                 </TableRow>
               )}
-              {!loading && candidates.map((candidate) => {
+              {paginatedCandidates.map((candidate) => {
                 const applicationCount = applicationCounts[candidate.id];
                 const showLoadingIndicator = pageCandidateIds.includes(candidate.id) && applicationCount === undefined;
 

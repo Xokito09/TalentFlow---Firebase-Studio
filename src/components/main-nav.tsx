@@ -12,11 +12,6 @@ import { LayoutGrid, Briefcase, Users, Building2 } from "lucide-react";
 
 const navItems: NavItem[] = [
   {
-    title: "Prospects",
-    href: "/",
-    icon: LayoutGrid,
-  },
-  {
     title: "Positions",
     href: "/positions",
     icon: Briefcase,
